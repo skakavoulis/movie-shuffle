@@ -6,11 +6,26 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import type { User } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import Layout from "@/components/Layout";
-import { posterUrl, movieHref, type TMDBMovie } from "@/lib/tmdb";
+import {
+  posterUrl,
+  movieHref,
+  getMovieGenres,
+  getMovieWatchProviders,
+  type TMDBMovie,
+  type TMDBGenre,
+  type TMDBWatchProvider,
+} from "@/lib/tmdb";
 import { useWatchlist } from "@/context/WatchlistContext";
+import DiscoverFiltersModal, {
+  DEFAULT_FILTERS,
+  activeFilterCount,
+  type DiscoverFilters,
+} from "@/components/DiscoverFiltersModal";
 
 interface DiscoverProps {
   user: User | null;
+  genres: TMDBGenre[];
+  providers: TMDBWatchProvider[];
 }
 
 const SWIPE_THRESHOLD = 80;
@@ -37,6 +52,28 @@ const GENRE_MAP: Record<number, string> = {
   37: "Western",
 };
 
+function buildFilterParams(filters: DiscoverFilters): string {
+  const params = new URLSearchParams();
+  if (filters.releaseYearGte) {
+    params.set("primary_release_date.gte", `${filters.releaseYearGte}-01-01`);
+  }
+  if (filters.voteAverageGte > 0) {
+    params.set("vote_average.gte", String(filters.voteAverageGte));
+  }
+  if (filters.genreIds.length > 0) {
+    params.set("with_genres", filters.genreIds.join("|"));
+  }
+  if (filters.providerIds.length > 0) {
+    params.set("with_watch_providers", filters.providerIds.join("|"));
+    const region =
+      typeof window !== "undefined"
+        ? (navigator.language || "en-US").split("-")[1] || "US"
+        : "US";
+    params.set("watch_region", region);
+  }
+  return params.toString();
+}
+
 export const getServerSideProps: GetServerSideProps<DiscoverProps> = async (
   context,
 ) => {
@@ -44,47 +81,80 @@ export const getServerSideProps: GetServerSideProps<DiscoverProps> = async (
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return { props: { user } };
+
+  let genres: TMDBGenre[] = [];
+  let providers: TMDBWatchProvider[] = [];
+
+  try {
+    const [genreData, providerData] = await Promise.all([
+      getMovieGenres(),
+      getMovieWatchProviders("US"),
+    ]);
+    genres = genreData.genres;
+    providers = providerData.results
+      .sort((a, b) => a.display_priority - b.display_priority)
+      .slice(0, 30);
+  } catch {
+    // page still works without filter data
+  }
+
+  return { props: { user, genres, providers } };
 };
 
 export default function DiscoverPage({
   user,
+  genres,
+  providers,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const [queue, setQueue] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [noResults, setNoResults] = useState(false);
+  const [filters, setFilters] = useState<DiscoverFilters>(DEFAULT_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const seenIds = useRef(new Set<number>());
   const fetchingRef = useRef(false);
+  const filtersRef = useRef(filters);
   const cardRef = useRef<HTMLDivElement>(null);
   const throwingRef = useRef(false);
   const throwTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const dragState = useRef({ active: false, startX: 0, startY: 0, dx: 0 });
+
+  filtersRef.current = filters;
 
   const { setWatchlistStatus } = useWatchlist();
 
   const fetchBatch = useCallback(async () => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
+    setNoResults(false);
     try {
-      const res = await fetch("/api/discover");
+      const qs = buildFilterParams(filtersRef.current);
+      const url = `/api/discover${qs ? `?${qs}` : ""}`;
+      const res = await fetch(url);
       if (!res.ok) return;
       const movies: TMDBMovie[] = await res.json();
       const fresh = movies.filter((m) => !seenIds.current.has(m.id));
-      setQueue((prev) => [...prev, ...fresh]);
+      if (fresh.length === 0) {
+        setNoResults(true);
+      } else {
+        setQueue((prev) => [...prev, ...fresh]);
+      }
     } catch {
       // will retry on next queue check
     } finally {
       fetchingRef.current = false;
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchBatch().finally(() => setLoading(false));
+    fetchBatch();
   }, [fetchBatch]);
 
   useEffect(() => {
-    if (queue.length < 5) fetchBatch();
-  }, [queue.length, fetchBatch]);
+    if (queue.length < 5 && !noResults) fetchBatch();
+  }, [queue.length, fetchBatch, noResults]);
 
   useEffect(() => {
     for (const movie of queue.slice(1, 4)) {
@@ -95,7 +165,22 @@ export default function DiscoverPage({
     }
   }, [queue]);
 
+  const applyFilters = useCallback(
+    (newFilters: DiscoverFilters) => {
+      filtersRef.current = newFilters;
+      setFilters(newFilters);
+      seenIds.current.clear();
+      setQueue([]);
+      setNoResults(false);
+      setLoading(true);
+      fetchingRef.current = false;
+      fetchBatch();
+    },
+    [fetchBatch],
+  );
+
   const advanceQueue = useCallback(() => {
+    if (!throwingRef.current) return;
     clearTimeout(throwTimerRef.current);
     throwingRef.current = false;
     setQueue((prev) => {
@@ -148,7 +233,7 @@ export default function DiscoverPage({
         likeStamp.style.opacity = direction === "right" ? "1" : "0";
       if (skipStamp) skipStamp.style.opacity = direction === "left" ? "1" : "0";
 
-      throwTimerRef.current = setTimeout(advanceQueue, 500);
+      throwTimerRef.current = setTimeout(advanceQueue, 400);
     },
     [queue, setWatchlistStatus, advanceQueue],
   );
@@ -251,18 +336,20 @@ export default function DiscoverPage({
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (filtersOpen) return;
       if (e.key === "ArrowLeft") throwCard("left");
       if (e.key === "ArrowRight") throwCard("right");
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [throwCard]);
+  }, [throwCard, filtersOpen]);
 
   useEffect(() => {
     return () => clearTimeout(throwTimerRef.current);
   }, []);
 
   const currentMovie = queue[0];
+  const filterCount = activeFilterCount(filters);
 
   return (
     <Layout user={user}>
@@ -270,7 +357,8 @@ export default function DiscoverPage({
         <title>Discover — MovieShuffle</title>
       </Head>
 
-      <div className="flex flex-col items-center min-h-[100dvh] px-4 pt-20 pb-6">
+      <div className="flex flex-col items-center min-h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">
+        {/* Header row */}
         <div className="flex items-center gap-3 mb-5">
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
             Discover
@@ -278,6 +366,34 @@ export default function DiscoverPage({
           <span className="px-2.5 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-semibold tracking-wide uppercase">
             Swipe
           </span>
+          <button
+            onClick={() => setFiltersOpen(true)}
+            className={`relative ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              filterCount > 0
+                ? "bg-accent/15 text-accent border border-accent/30"
+                : "bg-bg-card border border-border text-text-secondary hover:text-white hover:border-white/20"
+            }`}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
+              />
+            </svg>
+            Filters
+            {filterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">
+                {filterCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {!user && (
@@ -299,6 +415,34 @@ export default function DiscoverPage({
               Finding movies for you...
             </p>
           </div>
+        ) : noResults && queue.length === 0 ? (
+          <div className="flex flex-col items-center justify-center flex-1 py-20">
+            <svg
+              className="w-16 h-16 text-text-muted mb-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.182 16.318A4.486 4.486 0 0012.016 15a4.486 4.486 0 00-3.198 1.318M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z"
+              />
+            </svg>
+            <p className="text-text-secondary text-lg font-medium mb-1">
+              No movies found
+            </p>
+            <p className="text-text-muted text-sm mb-4 text-center max-w-xs">
+              Try adjusting your filters for more results
+            </p>
+            <button
+              onClick={() => setFiltersOpen(true)}
+              className="px-5 py-2 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-colors text-sm"
+            >
+              Edit Filters
+            </button>
+          </div>
         ) : queue.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 py-20">
             <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -312,7 +456,7 @@ export default function DiscoverPage({
             <div className="relative w-[78vw] max-w-[640px] aspect-[2/3] select-none flex-shrink-0">
               {queue.slice(0, 3).map((movie, index) => {
                 const isTop = index === 0;
-                const genres = movie.genre_ids
+                const movieGenres = movie.genre_ids
                   .slice(0, 2)
                   .map((id) => GENRE_MAP[id])
                   .filter(Boolean);
@@ -329,6 +473,7 @@ export default function DiscoverPage({
                       transform: isTop
                         ? undefined
                         : `scale(${1 - index * 0.04}) translateY(${index * 10}px)`,
+                      transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
                       touchAction: isTop ? "none" : undefined,
                       willChange: isTop ? "transform" : undefined,
                       cursor: isTop ? "grab" : undefined,
@@ -375,9 +520,9 @@ export default function DiscoverPage({
 
                     {/* Movie info overlay */}
                     <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
-                      {genres.length > 0 && (
+                      {movieGenres.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
-                          {genres.map((g) => (
+                          {movieGenres.map((g) => (
                             <span
                               key={g}
                               className="px-2 py-0.5 rounded-full bg-white/15 text-white/80 text-xs font-medium backdrop-blur-sm"
@@ -508,6 +653,15 @@ export default function DiscoverPage({
           </>
         )}
       </div>
+
+      <DiscoverFiltersModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        onApply={applyFilters}
+        current={filters}
+        genres={genres}
+        providers={providers}
+      />
     </Layout>
   );
 }

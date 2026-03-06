@@ -1,9 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import {
-  getPopularMovies,
-  getTopRatedMovies,
-  getNowPlayingMovies,
-} from "@/lib/tmdb";
+import { discoverMovies } from "@/lib/tmdb";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,16 +11,42 @@ export default async function handler(
   }
 
   try {
-    const lists = [getPopularMovies, getTopRatedMovies, getNowPlayingMovies];
-    const listFn = lists[Math.floor(Math.random() * lists.length)];
-    const page1 = Math.floor(Math.random() * 20) + 1;
-    let page2 = Math.floor(Math.random() * 20) + 1;
-    while (page2 === page1) page2 = Math.floor(Math.random() * 20) + 1;
+    const params: Record<string, string> = {
+      include_adult: "false",
+      sort_by: "popularity.desc",
+    };
 
-    const [r1, r2] = await Promise.all([listFn(page1), listFn(page2)]);
-    const all = [...r1.results, ...r2.results];
+    const q = req.query;
 
-    const filtered = all.filter(
+    if (q["primary_release_date.gte"]) {
+      params["primary_release_date.gte"] = String(
+        q["primary_release_date.gte"],
+      );
+    }
+    if (q["vote_average.gte"]) {
+      params["vote_average.gte"] = String(q["vote_average.gte"]);
+    }
+    if (q["with_genres"]) {
+      params["with_genres"] = String(q["with_genres"]);
+    }
+    if (q["with_watch_providers"]) {
+      params["with_watch_providers"] = String(q["with_watch_providers"]);
+      params["watch_region"] = String(q["watch_region"] || "US");
+      params["with_watch_monetization_types"] = "flatrate";
+    }
+
+    const firstPage = await discoverMovies({ ...params, page: "1" });
+    const maxPage = Math.min(firstPage.total_pages, 30);
+
+    const randomPage =
+      maxPage > 1 ? Math.floor(Math.random() * maxPage) + 1 : 1;
+
+    const data =
+      randomPage === 1
+        ? firstPage
+        : await discoverMovies({ ...params, page: String(randomPage) });
+
+    const filtered = data.results.filter(
       (m) => m.poster_path && m.overview && m.vote_average > 0,
     );
 
@@ -34,7 +56,7 @@ export default async function handler(
     }
 
     res.setHeader("Cache-Control", "no-store");
-    return res.status(200).json(filtered.slice(0, 20));
+    return res.status(200).json(filtered);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to fetch movies";
     return res.status(500).json({ error: msg });

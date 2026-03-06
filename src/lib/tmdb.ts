@@ -288,6 +288,43 @@ export function sampleMovies(movies: TMDBMovie[], count: number): TMDBMovie[] {
   return shuffleArray(movies).slice(0, count);
 }
 
+export interface TMDBWatchProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string | null;
+  display_priority: number;
+}
+
+export async function getMovieGenres() {
+  return cached("genres:movie", () =>
+    tmdbFetch<{ genres: TMDBGenre[] }>("/genre/movie/list"),
+  );
+}
+
+export async function getMovieWatchProviders(region = "US") {
+  return cached(`providers:movie:${region}`, () =>
+    tmdbFetch<{ results: TMDBWatchProvider[] }>("/watch/providers/movie", {
+      watch_region: region,
+    }),
+  );
+}
+
+export async function discoverMovies(params: Record<string, string>) {
+  return tmdbFetch<TMDBListResponse>("/discover/movie", {
+    include_adult: "false",
+    sort_by: "popularity.desc",
+    ...params,
+  });
+}
+
+export function providerLogoUrl(
+  path: string | null,
+  size: "w45" | "w92" | "w154" | "original" = "w92",
+) {
+  if (!path) return null;
+  return `${config.tmdb.imageBaseUrl}/${size}${path}`;
+}
+
 export function posterUrl(
   path: string | null,
   size: "w342" | "w500" | "w780" | "original" = "w500",
