@@ -74,7 +74,9 @@ export default function AuthPage() {
       <div className="flex items-center justify-center min-h-screen px-6 pt-20">
         <div className="w-full max-w-md bg-bg-card border border-border rounded-2xl p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-extrabold text-accent">MovieShuffle</h1>
+            <h1 className="text-3xl font-extrabold text-accent">
+              MovieShuffle
+            </h1>
             <p className="text-text-secondary mt-2">
               Sign in to access your profile and more
             </p>

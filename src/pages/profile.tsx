@@ -59,8 +59,8 @@ export default function ProfilePage({
   user,
   profile: initialProfile,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const [displayName, setDisplayName] = useState(initialProfile.display_name);
-  const [avatarUrl, setAvatarUrl] = useState(initialProfile.avatar_url);
+  const [displayName, setDisplayName] = useState(initialProfile?.display_name);
+  const [avatarUrl, setAvatarUrl] = useState(initialProfile?.avatar_url);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";

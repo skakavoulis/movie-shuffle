@@ -28,52 +28,25 @@ cp .env.local.example .env.local
 
 1. Create a new Supabase project.
 2. Enable **Google** as an OAuth provider under Authentication → Providers, adding your Google OAuth credentials.
-3. Run the following SQL in the Supabase SQL Editor to create the `profiles` table and RLS policies:
+3. Apply database migrations. You have two options:
 
-```sql
--- Create profiles table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  display_name TEXT NOT NULL DEFAULT '',
-  avatar_url TEXT NOT NULL DEFAULT '',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+   **Option A — Supabase CLI** (recommended):
 
--- Enable RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+   ```bash
+   npx supabase db push
+   ```
 
--- Users can read their own profile
-CREATE POLICY "Users can read own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
-
--- Users can insert their own profile
-CREATE POLICY "Users can insert own profile"
-  ON public.profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
-
--- Users can update their own profile
-CREATE POLICY "Users can update own profile"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
-
--- Auto-update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-```
+   **Option B — Manual SQL**: Copy and paste the contents of `supabase/migrations/20260306120000_create_profiles.sql` into the Supabase SQL Editor and run it.
 
 4. In the Supabase dashboard under Authentication → URL Configuration, add your app's URL (e.g. `http://localhost:3000`) to the Redirect URLs.
+
+### Database Migrations
+
+Migrations live in `supabase/migrations/` and are applied in timestamp order:
+
+| Migration | Description |
+|---|---|
+| `20260306120000_create_profiles.sql` | Creates the `profiles` table (1:1 with `auth.users`), enables RLS with per-user read/insert/update policies, and adds an `updated_at` auto-trigger |
 
 ### Running the App
 
@@ -87,6 +60,10 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
+supabase/
+├── config.toml                              # Supabase local config
+└── migrations/
+    └── 20260306120000_create_profiles.sql   # Profiles table + RLS + trigger
 src/
 ├── components/
 │   ├── AuthGuard.tsx        # SSR auth protection wrapper

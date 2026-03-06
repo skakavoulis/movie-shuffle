@@ -22,3 +22,5 @@
 - [x] Add SEO meta tags in `_document.tsx`
 - [x] Write README with setup instructions and Supabase SQL
 - [x] Add global dark theme styling (Vayvo-inspired)
+- [x] Add Supabase migration for `profiles` table with RLS policies and `updated_at` trigger
+- [x] Add `supabase/config.toml` for local Supabase CLI config

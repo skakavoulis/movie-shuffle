@@ -75,12 +75,31 @@ export default function Layout({ children, user }: LayoutProps) {
                   onClick={() => setMenuOpen(!menuOpen)}
                   className="flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-accent font-semibold text-sm">
-                    {user.email?.[0]?.toUpperCase() ?? "U"}
-                  </div>
+                  {user.user_metadata?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.user_metadata.avatar_url}
+                      alt="User avatar"
+                      className="w-6 h-6 rounded-full border border-accent/40 bg-bg-primary object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-accent font-semibold text-sm">
+                      {user.email?.[0]?.toUpperCase() ?? "U"}
+                    </div>
+                  )}
                   <span className="hidden md:inline">{user.email}</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg
+                    className="w-6 h-6 rounded-full bg-accent/20 border border-accent/40 p-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
                 {menuOpen && (
@@ -116,8 +135,13 @@ export default function Layout({ children, user }: LayoutProps) {
 
       <footer className="px-6 md:px-12 py-8 border-t border-border mt-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-text-muted">
-          <p>&copy; {new Date().getFullYear()} MovieShuffle. Powered by TMDB.</p>
-          <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+          <p>
+            &copy; {new Date().getFullYear()} MovieShuffle. Powered by TMDB.
+          </p>
+          <p>
+            This product uses the TMDB API but is not endorsed or certified by
+            TMDB.
+          </p>
         </div>
       </footer>
     </div>
