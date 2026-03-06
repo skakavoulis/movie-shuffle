@@ -19,6 +19,7 @@ import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
+import WatchlistButton from "@/components/WatchlistButton";
 
 interface MoviePageProps {
   user: User | null;
@@ -265,6 +266,16 @@ export default function MoviePage({
                     Like
                   </span>
                 </LikeButton>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                <WatchlistButton
+                  mediaType="movie"
+                  mediaId={movie.id}
+                  title={movie.title}
+                  poster_path={movie.poster_path}
+                  size="lg"
+                  showLabel
+                />
               </div>
             </div>
           </div>

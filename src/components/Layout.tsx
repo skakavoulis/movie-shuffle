@@ -52,6 +52,7 @@ export default function Layout({ children, user }: LayoutProps) {
       ? [
           { href: "/my-movies", label: "My Movies" },
           { href: "/my-tv-shows", label: "My TV Shows" },
+          { href: "/watchlist", label: "Watchlist" },
           { href: "/profile", label: "Profile" },
         ]
       : []),
@@ -211,6 +212,11 @@ export default function Layout({ children, user }: LayoutProps) {
                   {link.label === "TV Shows" && (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  {link.label === "Watchlist" && (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                     </svg>
                   )}
                   {link.label === "Profile" && (

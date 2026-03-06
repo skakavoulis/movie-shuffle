@@ -19,6 +19,7 @@ import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
+import WatchlistButton from "@/components/WatchlistButton";
 
 interface TVPageProps {
   user: User | null;
@@ -266,6 +267,16 @@ export default function TVShowPage({
                     Like
                   </span>
                 </LikeButton>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                <WatchlistButton
+                  mediaType="tv"
+                  mediaId={show.id}
+                  title={show.name}
+                  poster_path={show.poster_path}
+                  size="lg"
+                  showLabel
+                />
               </div>
             </div>
           </div>

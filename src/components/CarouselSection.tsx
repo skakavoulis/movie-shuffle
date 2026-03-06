@@ -7,7 +7,10 @@ interface CarouselSectionProps {
   items: MediaItem[];
 }
 
-export default function CarouselSection({ title, items }: CarouselSectionProps) {
+export default function CarouselSection({
+  title,
+  items,
+}: CarouselSectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -44,8 +47,18 @@ export default function CarouselSection({ title, items }: CarouselSectionProps) 
             aria-label="Scroll left"
             className="absolute left-0 top-0 bottom-8 z-20 w-12 bg-gradient-to-r from-bg-primary to-transparent flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity"
           >
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
         )}
@@ -64,8 +77,18 @@ export default function CarouselSection({ title, items }: CarouselSectionProps) 
             aria-label="Scroll right"
             className="absolute right-0 top-0 bottom-8 z-20 w-12 bg-gradient-to-l from-bg-primary to-transparent flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity"
           >
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         )}
