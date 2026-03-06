@@ -1,4 +1,5 @@
 import { config, assertServerConfig } from "./config";
+import { cached } from "./cache";
 
 export interface TMDBMovie {
   id: number;
@@ -156,7 +157,11 @@ export interface TMDBMovieDetails {
   tagline: string;
   status: string;
   genres: TMDBGenre[];
-  production_companies: { id: number; name: string; logo_path: string | null }[];
+  production_companies: {
+    id: number;
+    name: string;
+    logo_path: string | null;
+  }[];
   budget: number;
   revenue: number;
   credits?: {
@@ -200,29 +205,35 @@ async function tmdbFetch<T>(
 }
 
 export async function getPopularMovies(page = 1) {
-  return tmdbFetch<TMDBListResponse>("/movie/popular", { page: String(page) });
+  return cached(`movies:popular:${page}`, () =>
+    tmdbFetch<TMDBListResponse>("/movie/popular", { page: String(page) }),
+  );
 }
 
 export async function getTopRatedMovies(page = 1) {
-  return tmdbFetch<TMDBListResponse>("/movie/top_rated", {
-    page: String(page),
-  });
+  return cached(`movies:top_rated:${page}`, () =>
+    tmdbFetch<TMDBListResponse>("/movie/top_rated", { page: String(page) }),
+  );
 }
 
 export async function getNowPlayingMovies(page = 1) {
-  return tmdbFetch<TMDBListResponse>("/movie/now_playing", {
-    page: String(page),
-  });
+  return cached(`movies:now_playing:${page}`, () =>
+    tmdbFetch<TMDBListResponse>("/movie/now_playing", { page: String(page) }),
+  );
 }
 
 export async function getTrendingMovies() {
-  return tmdbFetch<TMDBListResponse>("/trending/movie/week");
+  return cached("movies:trending", () =>
+    tmdbFetch<TMDBListResponse>("/trending/movie/week"),
+  );
 }
 
 export async function getMovieDetails(id: number) {
-  return tmdbFetch<TMDBMovieDetails>(`/movie/${id}`, {
-    append_to_response: "credits,videos,similar,reviews",
-  });
+  return cached(`movie:${id}`, () =>
+    tmdbFetch<TMDBMovieDetails>(`/movie/${id}`, {
+      append_to_response: "credits,videos,similar,reviews",
+    }),
+  );
 }
 
 interface TMDBTVListResponse {
@@ -233,25 +244,35 @@ interface TMDBTVListResponse {
 }
 
 export async function getPopularTVShows(page = 1) {
-  return tmdbFetch<TMDBTVListResponse>("/tv/popular", { page: String(page) });
+  return cached(`tv:popular:${page}`, () =>
+    tmdbFetch<TMDBTVListResponse>("/tv/popular", { page: String(page) }),
+  );
 }
 
 export async function getTopRatedTVShows(page = 1) {
-  return tmdbFetch<TMDBTVListResponse>("/tv/top_rated", { page: String(page) });
+  return cached(`tv:top_rated:${page}`, () =>
+    tmdbFetch<TMDBTVListResponse>("/tv/top_rated", { page: String(page) }),
+  );
 }
 
 export async function getOnTheAirTVShows(page = 1) {
-  return tmdbFetch<TMDBTVListResponse>("/tv/on_the_air", { page: String(page) });
+  return cached(`tv:on_the_air:${page}`, () =>
+    tmdbFetch<TMDBTVListResponse>("/tv/on_the_air", { page: String(page) }),
+  );
 }
 
 export async function getTrendingTVShows() {
-  return tmdbFetch<TMDBTVListResponse>("/trending/tv/week");
+  return cached("tv:trending", () =>
+    tmdbFetch<TMDBTVListResponse>("/trending/tv/week"),
+  );
 }
 
 export async function getTVShowDetails(id: number) {
-  return tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
-    append_to_response: "credits,videos,similar,reviews",
-  });
+  return cached(`tv:${id}`, () =>
+    tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
+      append_to_response: "credits,videos,similar,reviews",
+    }),
+  );
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -325,7 +346,10 @@ export function parseTVIdFromSlug(slug: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
-export function sampleTVShows(shows: TMDBTVShow[], count: number): TMDBTVShow[] {
+export function sampleTVShows(
+  shows: TMDBTVShow[],
+  count: number,
+): TMDBTVShow[] {
   return shuffleArray(shows).slice(0, count);
 }
 
@@ -359,7 +383,9 @@ export async function searchMulti(query: string, page = 1) {
   });
 }
 
-export function searchResultToMediaItem(r: TMDBMultiSearchResult): MediaItem | null {
+export function searchResultToMediaItem(
+  r: TMDBMultiSearchResult,
+): MediaItem | null {
   if (r.media_type === "movie") {
     return {
       id: r.id,
