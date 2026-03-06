@@ -125,6 +125,7 @@ export function movieToMediaItem(movie: TMDBMovie): MediaItem {
     vote_average: movie.vote_average,
     releaseDate: movie.release_date,
     href: movieHref(movie),
+    mediaType: "movie",
   };
 }
 
@@ -138,6 +139,7 @@ export function tvShowToMediaItem(show: TMDBTVShow): MediaItem {
     vote_average: show.vote_average,
     releaseDate: show.first_air_date,
     href: tvHref(show),
+    mediaType: "tv",
   };
 }
 

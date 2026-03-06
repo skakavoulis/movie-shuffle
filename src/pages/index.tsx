@@ -22,7 +22,9 @@ interface HomeProps {
   error: string | null;
 }
 
-export const getServerSideProps: GetServerSideProps<HomeProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<HomeProps> = async (
+  context,
+) => {
   const supabase = createServerSupabaseClient(context);
   const {
     data: { user },
@@ -36,19 +38,30 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (context)
       getTrendingMovies(),
     ]);
 
-    const allForHero = [
-      ...popular.results,
-      ...trending.results,
-    ].filter((m) => m.backdrop_path);
+    const allForHero = [...popular.results, ...trending.results].filter(
+      (m) => m.backdrop_path,
+    );
 
     const heroMovie =
       allForHero[Math.floor(Math.random() * allForHero.length)] ?? null;
 
     const sections = [
-      { title: "Random Picks", items: sampleMovies(popular.results, 15).map(movieToMediaItem) },
-      { title: "Trending This Week", items: sampleMovies(trending.results, 15).map(movieToMediaItem) },
-      { title: "Top Rated", items: sampleMovies(topRated.results, 15).map(movieToMediaItem) },
-      { title: "Now Playing", items: sampleMovies(nowPlaying.results, 15).map(movieToMediaItem) },
+      {
+        title: "Random Picks",
+        items: sampleMovies(popular.results, 15).map(movieToMediaItem),
+      },
+      {
+        title: "Trending This Week",
+        items: sampleMovies(trending.results, 15).map(movieToMediaItem),
+      },
+      {
+        title: "Top Rated",
+        items: sampleMovies(topRated.results, 15).map(movieToMediaItem),
+      },
+      {
+        title: "Now Playing",
+        items: sampleMovies(nowPlaying.results, 15).map(movieToMediaItem),
+      },
     ];
 
     return {
@@ -82,8 +95,18 @@ export default function Home({
       {error ? (
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 pt-20">
           <div className="bg-bg-card border border-border rounded-xl p-8 max-w-md text-center">
-            <svg className="w-16 h-16 mx-auto text-accent mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="w-16 h-16 mx-auto text-accent mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
             <h2 className="text-xl font-bold text-text-primary mb-2">
               Unable to Load Movies

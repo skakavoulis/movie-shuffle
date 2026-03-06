@@ -48,7 +48,13 @@ export default function Layout({ children, user }: LayoutProps) {
   const navLinks = [
     { href: "/", label: "Movies" },
     { href: "/tv-shows", label: "TV Shows" },
-    ...(user ? [{ href: "/profile", label: "Profile" }] : []),
+    ...(user
+      ? [
+          { href: "/my-movies", label: "My Movies" },
+          { href: "/my-tv-shows", label: "My TV Shows" },
+          { href: "/profile", label: "Profile" },
+        ]
+      : []),
   ];
 
   return (

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { posterUrl, type MediaItem } from "@/lib/tmdb";
+import LikeButton from "./LikeButton";
 
 interface MovieCardProps {
   item: MediaItem;
@@ -23,6 +24,17 @@ export default function MovieCard({ item }: MovieCardProps) {
           sizes="180px"
           className="object-cover transition-opacity duration-300 group-hover:opacity-80"
         />
+        {item.mediaType && (
+          <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg">
+            <LikeButton
+              mediaType={item.mediaType}
+              mediaId={item.id}
+              title={item.title}
+              poster_path={item.poster_path}
+              size="sm"
+            />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
           <p className="text-sm font-semibold text-text-primary truncate">
