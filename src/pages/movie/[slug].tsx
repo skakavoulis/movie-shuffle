@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import {
   getMovieDetails,
+  getMovieWatchProvidersById,
   parseMovieIdFromSlug,
   movieSlug,
   posterUrl,
@@ -12,7 +13,9 @@ import {
   profileUrl,
   movieToMediaItem,
   personHref,
+  pickWatchRegion,
   type TMDBMovieDetails,
+  type TMDBWatchProviderOffer,
 } from "@/lib/tmdb";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -20,10 +23,12 @@ import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
+import WatchProvidersSection from "@/components/WatchProvidersSection";
 
 interface MoviePageProps {
   user: User | null;
   movie: TMDBMovieDetails;
+  watchOffer: TMDBWatchProviderOffer | null;
 }
 
 export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
@@ -42,7 +47,10 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
   } = await supabase.auth.getUser();
 
   try {
-    const movie = await getMovieDetails(movieId);
+    const [movie, watchData] = await Promise.all([
+      getMovieDetails(movieId),
+      getMovieWatchProvidersById(movieId).catch(() => ({ results: {} })),
+    ]);
 
     const canonicalSlug = movieSlug(movie);
     if (slug !== canonicalSlug) {
@@ -54,7 +62,9 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
       };
     }
 
-    return { props: { user, movie } };
+    const watchOffer = pickWatchRegion(watchData.results)?.offer ?? null;
+
+    return { props: { user, movie, watchOffer } };
   } catch {
     return { notFound: true };
   }
@@ -75,6 +85,7 @@ function formatCurrency(amount: number) {
 export default function MoviePage({
   user,
   movie,
+  watchOffer,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
@@ -280,6 +291,9 @@ export default function MoviePage({
             </div>
           </div>
         </div>
+
+        {/* Where to watch */}
+        <WatchProvidersSection offer={watchOffer} />
 
         {/* Cast */}
         {cast.length > 0 && (

@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import {
   getTVShowDetails,
+  getTVShowWatchProvidersById,
   parseTVIdFromSlug,
   tvSlug,
   posterUrl,
@@ -12,7 +13,9 @@ import {
   profileUrl,
   tvShowToMediaItem,
   personHref,
+  pickWatchRegion,
   type TMDBTVShowDetails,
+  type TMDBWatchProviderOffer,
 } from "@/lib/tmdb";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -20,10 +23,12 @@ import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
+import WatchProvidersSection from "@/components/WatchProvidersSection";
 
 interface TVPageProps {
   user: User | null;
   show: TMDBTVShowDetails;
+  watchOffer: TMDBWatchProviderOffer | null;
 }
 
 export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
@@ -42,7 +47,10 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
   } = await supabase.auth.getUser();
 
   try {
-    const show = await getTVShowDetails(showId);
+    const [show, watchData] = await Promise.all([
+      getTVShowDetails(showId),
+      getTVShowWatchProvidersById(showId).catch(() => ({ results: {} })),
+    ]);
 
     const canonicalSlug = tvSlug(show);
     if (slug !== canonicalSlug) {
@@ -54,7 +62,9 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
       };
     }
 
-    return { props: { user, show } };
+    const watchOffer = pickWatchRegion(watchData.results)?.offer ?? null;
+
+    return { props: { user, show, watchOffer } };
   } catch {
     return { notFound: true };
   }
@@ -63,6 +73,7 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
 export default function TVShowPage({
   user,
   show,
+  watchOffer,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
@@ -281,6 +292,9 @@ export default function TVShowPage({
             </div>
           </div>
         </div>
+
+        {/* Where to watch */}
+        <WatchProvidersSection offer={watchOffer} />
 
         {/* Cast */}
         {cast.length > 0 && (

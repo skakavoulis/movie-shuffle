@@ -339,6 +339,43 @@ export async function discoverTVShows(params: Record<string, string>) {
   });
 }
 
+/** Watch providers for a specific title, by country (e.g. US). */
+export interface TMDBWatchProviderOffer {
+  link: string;
+  flatrate?: TMDBWatchProvider[];
+  rent?: TMDBWatchProvider[];
+  buy?: TMDBWatchProvider[];
+  ads?: TMDBWatchProvider[];
+  free?: TMDBWatchProvider[];
+}
+
+export interface TMDBTitleWatchProviders {
+  id: number;
+  results: Record<string, TMDBWatchProviderOffer>;
+}
+
+export async function getMovieWatchProvidersById(movieId: number) {
+  return cached(`movie:${movieId}:watch_providers`, () =>
+    tmdbFetch<TMDBTitleWatchProviders>(`/movie/${movieId}/watch/providers`),
+  );
+}
+
+export async function getTVShowWatchProvidersById(tvId: number) {
+  return cached(`tv:${tvId}:watch_providers`, () =>
+    tmdbFetch<TMDBTitleWatchProviders>(`/tv/${tvId}/watch/providers`),
+  );
+}
+
+/** Prefer US, then first available region. */
+export function pickWatchRegion(
+  results: Record<string, TMDBWatchProviderOffer>,
+): { region: string; offer: TMDBWatchProviderOffer } | null {
+  const offer = results["US"] ?? Object.values(results)[0];
+  if (!offer) return null;
+  const region = results["US"] ? "US" : Object.keys(results)[0];
+  return { region, offer };
+}
+
 export function providerLogoUrl(
   path: string | null,
   size: "w45" | "w92" | "w154" | "original" = "w92",
