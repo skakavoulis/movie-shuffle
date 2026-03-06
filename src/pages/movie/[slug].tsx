@@ -11,8 +11,10 @@ import {
   backdropUrl,
   profileUrl,
   movieToMediaItem,
+  personHref,
   type TMDBMovieDetails,
 } from "@/lib/tmdb";
+import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
@@ -276,11 +278,12 @@ export default function MoviePage({
             </h2>
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
               {cast.map((member) => (
-                <div
+                <Link
                   key={member.id}
-                  className="flex-shrink-0 w-[120px] text-center"
+                  href={personHref(member)}
+                  className="flex-shrink-0 w-[120px] text-center group"
                 >
-                  <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-bg-card mx-auto">
+                  <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-bg-card mx-auto ring-2 ring-transparent group-hover:ring-accent/50 transition-all">
                     {profileUrl(member.profile_path) ? (
                       <Image
                         src={profileUrl(member.profile_path, "w185")!}
@@ -295,13 +298,13 @@ export default function MoviePage({
                       </div>
                     )}
                   </div>
-                  <p className="mt-2 text-sm font-medium text-text-primary truncate">
+                  <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
                     {member.name}
                   </p>
                   <p className="text-xs text-text-muted truncate">
                     {member.character}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           </section>

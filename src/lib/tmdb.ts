@@ -346,6 +346,65 @@ export function parseTVIdFromSlug(slug: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+export interface TMDBPersonDetails {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string;
+  also_known_as: string[];
+  gender: number;
+  homepage: string | null;
+  combined_credits?: {
+    cast: {
+      id: number;
+      media_type: "movie" | "tv";
+      title?: string;
+      name?: string;
+      character: string;
+      poster_path: string | null;
+      backdrop_path: string | null;
+      vote_average: number;
+      release_date?: string;
+      first_air_date?: string;
+      popularity: number;
+    }[];
+  };
+  external_ids?: {
+    imdb_id: string | null;
+    instagram_id: string | null;
+    twitter_id: string | null;
+  };
+}
+
+export async function getPersonDetails(id: number) {
+  return cached(`person:${id}`, () =>
+    tmdbFetch<TMDBPersonDetails>(`/person/${id}`, {
+      append_to_response: "combined_credits,external_ids",
+    }),
+  );
+}
+
+export function personSlug(person: { id: number; name: string }) {
+  const name = person.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `${name}-${person.id}`;
+}
+
+export function personHref(person: { id: number; name: string }) {
+  return `/cast/${personSlug(person)}`;
+}
+
+export function parsePersonIdFromSlug(slug: string): number | null {
+  const match = slug.match(/-(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
 export function sampleTVShows(
   shows: TMDBTVShow[],
   count: number,
