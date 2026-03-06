@@ -24,3 +24,6 @@
 - [x] Add global dark theme styling (Vayvo-inspired)
 - [x] Add Supabase migration for `profiles` table with RLS policies and `updated_at` trigger
 - [x] Add `supabase/config.toml` for local Supabase CLI config
+- [x] Add movie detail page at `/movie/<name>-<id>` with SSR, SEO-friendly slugs, cast, trailer, and similar movies
+- [x] Link MovieCard and HeroBanner to movie detail page
+- [x] Add `getMovieDetails` TMDB fetcher with credits, videos, and similar movies

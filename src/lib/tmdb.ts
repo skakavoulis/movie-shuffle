@@ -11,6 +11,63 @@ export interface TMDBMovie {
   genre_ids: number[];
 }
 
+export interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+export interface TMDBCastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+  order: number;
+}
+
+export interface TMDBCrewMember {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+  profile_path: string | null;
+}
+
+export interface TMDBVideo {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+}
+
+export interface TMDBMovieDetails {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  vote_count: number;
+  release_date: string;
+  runtime: number | null;
+  tagline: string;
+  status: string;
+  genres: TMDBGenre[];
+  production_companies: { id: number; name: string; logo_path: string | null }[];
+  budget: number;
+  revenue: number;
+  credits?: {
+    cast: TMDBCastMember[];
+    crew: TMDBCrewMember[];
+  };
+  videos?: {
+    results: TMDBVideo[];
+  };
+  similar?: {
+    results: TMDBMovie[];
+  };
+}
+
 interface TMDBListResponse {
   page: number;
   results: TMDBMovie[];
@@ -55,6 +112,12 @@ export async function getTrendingMovies() {
   return tmdbFetch<TMDBListResponse>("/trending/movie/week");
 }
 
+export async function getMovieDetails(id: number) {
+  return tmdbFetch<TMDBMovieDetails>(`/movie/${id}`, {
+    append_to_response: "credits,videos,similar",
+  });
+}
+
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -82,4 +145,29 @@ export function backdropUrl(
 ) {
   if (!path) return null;
   return `${config.tmdb.imageBaseUrl}/${size}${path}`;
+}
+
+export function profileUrl(
+  path: string | null,
+  size: "w185" | "h632" | "original" = "w185",
+) {
+  if (!path) return null;
+  return `${config.tmdb.imageBaseUrl}/${size}${path}`;
+}
+
+export function movieSlug(movie: { id: number; title: string }) {
+  const name = movie.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `${name}-${movie.id}`;
+}
+
+export function movieHref(movie: { id: number; title: string }) {
+  return `/movie/${movieSlug(movie)}`;
+}
+
+export function parseMovieIdFromSlug(slug: string): number | null {
+  const match = slug.match(/-(\d+)$/);
+  return match ? Number(match[1]) : null;
 }

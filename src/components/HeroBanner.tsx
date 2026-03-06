@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { backdropUrl, type TMDBMovie } from "@/lib/tmdb";
+import Link from "next/link";
+import { backdropUrl, movieHref, type TMDBMovie } from "@/lib/tmdb";
 
 interface HeroBannerProps {
   movie: TMDBMovie;
@@ -9,6 +10,7 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
   const rating = movie.vote_average?.toFixed(1) ?? "";
+  const href = movieHref(movie);
 
   return (
     <section className="relative w-full h-[70vh] min-h-[480px] max-h-[720px] overflow-hidden">
@@ -50,7 +52,10 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
         </p>
 
         <div className="flex gap-3 mt-6">
-          <button className="flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20">
+          <Link
+            href={href}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20"
+          >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -59,13 +64,16 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
               />
             </svg>
             Details
-          </button>
-          <button className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold backdrop-blur-sm transition-colors">
+          </Link>
+          <Link
+            href={href}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold backdrop-blur-sm transition-colors"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             More Info
-          </button>
+          </Link>
         </div>
       </div>
     </section>

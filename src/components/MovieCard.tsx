@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { posterUrl, type TMDBMovie } from "@/lib/tmdb";
+import Link from "next/link";
+import { posterUrl, movieHref, type TMDBMovie } from "@/lib/tmdb";
 
 interface MovieCardProps {
   movie: TMDBMovie;
@@ -10,7 +11,10 @@ export default function MovieCard({ movie }: MovieCardProps) {
   const rating = movie.vote_average?.toFixed(1) ?? "—";
 
   return (
-    <div className="group relative flex-shrink-0 w-[180px] cursor-pointer transition-transform duration-300 hover:scale-105 hover:z-10">
+    <Link
+      href={movieHref(movie)}
+      className="group relative flex-shrink-0 w-[180px] transition-transform duration-300 hover:scale-105 hover:z-10"
+    >
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-bg-card shadow-lg">
         <Image
           src={posterUrl(movie.poster_path, "w342")}
@@ -38,6 +42,6 @@ export default function MovieCard({ movie }: MovieCardProps) {
       <p className="mt-2 text-sm text-text-secondary truncate group-hover:text-text-primary transition-colors">
         {movie.title}
       </p>
-    </div>
+    </Link>
   );
 }
