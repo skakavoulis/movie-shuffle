@@ -109,8 +109,10 @@ export type MediaItem = {
   poster_path: string | null;
   backdrop_path: string | null;
   vote_average: number;
+  popularity?: number;
   releaseDate: string;
   href: string;
+  mediaType?: "movie" | "tv";
 };
 
 export function movieToMediaItem(movie: TMDBMovie): MediaItem {
@@ -323,4 +325,66 @@ export function parseTVIdFromSlug(slug: string): number | null {
 
 export function sampleTVShows(shows: TMDBTVShow[], count: number): TMDBTVShow[] {
   return shuffleArray(shows).slice(0, count);
+}
+
+export interface TMDBMultiSearchResult {
+  id: number;
+  media_type: "movie" | "tv" | "person";
+  title?: string;
+  name?: string;
+  overview?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  popularity: number;
+  release_date?: string;
+  first_air_date?: string;
+  genre_ids?: number[];
+}
+
+interface TMDBMultiSearchResponse {
+  page: number;
+  results: TMDBMultiSearchResult[];
+  total_pages: number;
+  total_results: number;
+}
+
+export async function searchMulti(query: string, page = 1) {
+  return tmdbFetch<TMDBMultiSearchResponse>("/search/multi", {
+    query,
+    page: String(page),
+    include_adult: "false",
+  });
+}
+
+export function searchResultToMediaItem(r: TMDBMultiSearchResult): MediaItem | null {
+  if (r.media_type === "movie") {
+    return {
+      id: r.id,
+      title: r.title ?? "",
+      overview: r.overview ?? "",
+      poster_path: r.poster_path,
+      backdrop_path: r.backdrop_path,
+      vote_average: r.vote_average,
+      popularity: r.popularity,
+      releaseDate: r.release_date ?? "",
+      href: movieHref({ id: r.id, title: r.title ?? "" }),
+      mediaType: "movie",
+    };
+  }
+  if (r.media_type === "tv") {
+    return {
+      id: r.id,
+      title: r.name ?? "",
+      overview: r.overview ?? "",
+      poster_path: r.poster_path,
+      backdrop_path: r.backdrop_path,
+      vote_average: r.vote_average,
+      popularity: r.popularity,
+      releaseDate: r.first_air_date ?? "",
+      href: tvHref({ id: r.id, name: r.name ?? "" }),
+      mediaType: "tv",
+    };
+  }
+  return null;
 }

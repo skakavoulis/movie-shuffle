@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { createClient } from "@/lib/supabaseClient";
 import type { User } from "@supabase/supabase-js";
 import { useState, useRef, useEffect } from "react";
+import SearchBar from "./SearchBar";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -79,6 +80,9 @@ export default function Layout({ children, user }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            <div className="hidden md:block">
+              <SearchBar />
+            </div>
             {user ? (
               <div ref={menuRef} className="relative">
                 <button
