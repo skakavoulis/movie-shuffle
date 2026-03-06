@@ -27,3 +27,4 @@
 - [x] Add movie detail page at `/movie/<name>-<id>` with SSR, SEO-friendly slugs, cast, trailer, and similar movies
 - [x] Link MovieCard and HeroBanner to movie detail page
 - [x] Add `getMovieDetails` TMDB fetcher with credits, videos, and similar movies
+- [x] Add TMDB user reviews section to movie detail page with ratings, avatars, expand/collapse

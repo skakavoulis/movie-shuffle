@@ -40,6 +40,23 @@ export interface TMDBVideo {
   type: string;
 }
 
+export interface TMDBReviewAuthor {
+  name: string;
+  username: string;
+  avatar_path: string | null;
+  rating: number | null;
+}
+
+export interface TMDBReview {
+  id: string;
+  author: string;
+  author_details: TMDBReviewAuthor;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  url: string;
+}
+
 export interface TMDBMovieDetails {
   id: number;
   title: string;
@@ -65,6 +82,10 @@ export interface TMDBMovieDetails {
   };
   similar?: {
     results: TMDBMovie[];
+  };
+  reviews?: {
+    results: TMDBReview[];
+    total_results: number;
   };
 }
 
@@ -114,7 +135,7 @@ export async function getTrendingMovies() {
 
 export async function getMovieDetails(id: number) {
   return tmdbFetch<TMDBMovieDetails>(`/movie/${id}`, {
-    append_to_response: "credits,videos,similar",
+    append_to_response: "credits,videos,similar,reviews",
   });
 }
 

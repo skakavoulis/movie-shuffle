@@ -14,6 +14,7 @@ import {
 } from "@/lib/tmdb";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
+import ReviewSection from "@/components/ReviewSection";
 
 interface MoviePageProps {
   user: User | null;
@@ -286,6 +287,12 @@ export default function MoviePage({
             </div>
           </section>
         )}
+
+        {/* Reviews */}
+        <ReviewSection
+          reviews={movie.reviews?.results ?? []}
+          totalResults={movie.reviews?.total_results ?? 0}
+        />
 
         {/* Similar movies */}
         {similar.length > 0 && (
