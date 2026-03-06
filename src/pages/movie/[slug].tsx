@@ -82,7 +82,9 @@ export default function MoviePage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const similar = (movie.similar?.results ?? []).slice(0, 15).map(movieToMediaItem);
+  const similar = (movie.similar?.results ?? [])
+    .slice(0, 15)
+    .map(movieToMediaItem);
 
   return (
     <Layout user={user}>
@@ -256,8 +258,11 @@ export default function MoviePage({
                   title={movie.title}
                   poster_path={movie.poster_path}
                   size="lg"
-                />
-                <span className="text-sm text-text-secondary font-medium">Like</span>
+                >
+                  <span className="text-sm text-text-secondary font-medium">
+                    Like
+                  </span>
+                </LikeButton>
               </div>
             </div>
           </div>

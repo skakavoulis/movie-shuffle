@@ -24,7 +24,7 @@ interface TVPageProps {
 }
 
 export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
-  context
+  context,
 ) => {
   const slug = context.params?.slug as string;
   const showId = parseTVIdFromSlug(slug);
@@ -68,14 +68,16 @@ export default function TVShowPage({
   const cast = show.credits?.cast?.slice(0, 12) ?? [];
   const trailer = show.videos?.results?.find(
     (v) =>
-      v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
+      v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const similar = (show.similar?.results ?? []).slice(0, 15).map(tvShowToMediaItem);
+  const similar = (show.similar?.results ?? [])
+    .slice(0, 15)
+    .map(tvShowToMediaItem);
   const avgRuntime =
     show.episode_run_time?.length > 0
       ? Math.round(
           show.episode_run_time.reduce((a, b) => a + b, 0) /
-            show.episode_run_time.length
+            show.episode_run_time.length,
         )
       : null;
 
@@ -144,7 +146,11 @@ export default function TVShowPage({
             <div className="flex flex-wrap items-center gap-3 mt-4">
               {rating && (
                 <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400 text-sm font-semibold">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                   {rating}
@@ -159,7 +165,8 @@ export default function TVShowPage({
                 </span>
               )}
               <span className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm">
-                {show.number_of_seasons} {show.number_of_seasons === 1 ? "Season" : "Seasons"}
+                {show.number_of_seasons}{" "}
+                {show.number_of_seasons === 1 ? "Season" : "Seasons"}
               </span>
               <span className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm">
                 {show.number_of_episodes} Episodes
@@ -231,7 +238,11 @@ export default function TVShowPage({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -248,8 +259,11 @@ export default function TVShowPage({
                   title={show.name}
                   poster_path={show.poster_path}
                   size="lg"
-                />
-                <span className="text-sm text-text-secondary font-medium">Like</span>
+                >
+                  <span className="text-sm text-text-secondary font-medium">
+                    Like
+                  </span>
+                </LikeButton>
               </div>
             </div>
           </div>
