@@ -1,23 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
-import { backdropUrl, movieHref, type TMDBMovie } from "@/lib/tmdb";
+import { backdropUrl, type MediaItem } from "@/lib/tmdb";
 
 interface HeroBannerProps {
-  movie: TMDBMovie;
+  item: MediaItem;
 }
 
-export default function HeroBanner({ movie }: HeroBannerProps) {
-  const bgUrl = backdropUrl(movie.backdrop_path, "original");
-  const year = movie.release_date?.split("-")[0] ?? "";
-  const rating = movie.vote_average?.toFixed(1) ?? "";
-  const href = movieHref(movie);
+export default function HeroBanner({ item }: HeroBannerProps) {
+  const bgUrl = backdropUrl(item.backdrop_path, "original");
+  const year = item.releaseDate?.split("-")[0] ?? "";
+  const rating = item.vote_average?.toFixed(1) ?? "";
 
   return (
     <section className="relative w-full h-[70vh] min-h-[480px] max-h-[720px] overflow-hidden">
       {bgUrl ? (
         <Image
           src={bgUrl}
-          alt={movie.title}
+          alt={item.title}
           fill
           priority
           sizes="100vw"
@@ -32,7 +31,7 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
 
       <div className="relative z-10 flex flex-col justify-end h-full px-6 md:px-12 pb-16 max-w-3xl">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white drop-shadow-lg">
-          {movie.title}
+          {item.title}
         </h1>
 
         <div className="flex items-center gap-4 mt-4 text-sm md:text-base text-text-secondary">
@@ -48,12 +47,12 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
         </div>
 
         <p className="mt-4 text-base md:text-lg text-text-primary/90 line-clamp-3 leading-relaxed">
-          {movie.overview}
+          {item.overview}
         </p>
 
         <div className="flex gap-3 mt-6">
           <Link
-            href={href}
+            href={item.href}
             className="flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -66,7 +65,7 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
             Details
           </Link>
           <Link
-            href={href}
+            href={item.href}
             className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold backdrop-blur-sm transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

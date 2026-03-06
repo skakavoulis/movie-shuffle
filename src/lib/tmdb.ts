@@ -57,6 +57,88 @@ export interface TMDBReview {
   url: string;
 }
 
+export interface TMDBTVShow {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  first_air_date: string;
+  genre_ids: number[];
+}
+
+export interface TMDBTVShowDetails {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  vote_count: number;
+  first_air_date: string;
+  last_air_date: string;
+  tagline: string;
+  status: string;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  episode_run_time: number[];
+  genres: TMDBGenre[];
+  networks: { id: number; name: string; logo_path: string | null }[];
+  created_by: { id: number; name: string; profile_path: string | null }[];
+  credits?: {
+    cast: TMDBCastMember[];
+    crew: TMDBCrewMember[];
+  };
+  videos?: {
+    results: TMDBVideo[];
+  };
+  similar?: {
+    results: TMDBTVShow[];
+  };
+  reviews?: {
+    results: TMDBReview[];
+    total_results: number;
+  };
+}
+
+export type MediaItem = {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  releaseDate: string;
+  href: string;
+};
+
+export function movieToMediaItem(movie: TMDBMovie): MediaItem {
+  return {
+    id: movie.id,
+    title: movie.title,
+    overview: movie.overview,
+    poster_path: movie.poster_path,
+    backdrop_path: movie.backdrop_path,
+    vote_average: movie.vote_average,
+    releaseDate: movie.release_date,
+    href: movieHref(movie),
+  };
+}
+
+export function tvShowToMediaItem(show: TMDBTVShow): MediaItem {
+  return {
+    id: show.id,
+    title: show.name,
+    overview: show.overview,
+    poster_path: show.poster_path,
+    backdrop_path: show.backdrop_path,
+    vote_average: show.vote_average,
+    releaseDate: show.first_air_date,
+    href: tvHref(show),
+  };
+}
+
 export interface TMDBMovieDetails {
   id: number;
   title: string;
@@ -139,6 +221,35 @@ export async function getMovieDetails(id: number) {
   });
 }
 
+interface TMDBTVListResponse {
+  page: number;
+  results: TMDBTVShow[];
+  total_pages: number;
+  total_results: number;
+}
+
+export async function getPopularTVShows(page = 1) {
+  return tmdbFetch<TMDBTVListResponse>("/tv/popular", { page: String(page) });
+}
+
+export async function getTopRatedTVShows(page = 1) {
+  return tmdbFetch<TMDBTVListResponse>("/tv/top_rated", { page: String(page) });
+}
+
+export async function getOnTheAirTVShows(page = 1) {
+  return tmdbFetch<TMDBTVListResponse>("/tv/on_the_air", { page: String(page) });
+}
+
+export async function getTrendingTVShows() {
+  return tmdbFetch<TMDBTVListResponse>("/trending/tv/week");
+}
+
+export async function getTVShowDetails(id: number) {
+  return tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
+    append_to_response: "credits,videos,similar,reviews",
+  });
+}
+
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -191,4 +302,25 @@ export function movieHref(movie: { id: number; title: string }) {
 export function parseMovieIdFromSlug(slug: string): number | null {
   const match = slug.match(/-(\d+)$/);
   return match ? Number(match[1]) : null;
+}
+
+export function tvSlug(show: { id: number; name: string }) {
+  const name = show.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return `${name}-${show.id}`;
+}
+
+export function tvHref(show: { id: number; name: string }) {
+  return `/tv/${tvSlug(show)}`;
+}
+
+export function parseTVIdFromSlug(slug: string): number | null {
+  const match = slug.match(/-(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+export function sampleTVShows(shows: TMDBTVShow[], count: number): TMDBTVShow[] {
+  return shuffleArray(shows).slice(0, count);
 }

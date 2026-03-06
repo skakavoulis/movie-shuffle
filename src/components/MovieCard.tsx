@@ -1,24 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
-import { posterUrl, movieHref, type TMDBMovie } from "@/lib/tmdb";
+import { posterUrl, type MediaItem } from "@/lib/tmdb";
 
 interface MovieCardProps {
-  movie: TMDBMovie;
+  item: MediaItem;
 }
 
-export default function MovieCard({ movie }: MovieCardProps) {
-  const year = movie.release_date?.split("-")[0] ?? "N/A";
-  const rating = movie.vote_average?.toFixed(1) ?? "—";
+export default function MovieCard({ item }: MovieCardProps) {
+  const year = item.releaseDate?.split("-")[0] ?? "N/A";
+  const rating = item.vote_average?.toFixed(1) ?? "—";
 
   return (
     <Link
-      href={movieHref(movie)}
+      href={item.href}
       className="group relative flex-shrink-0 w-[180px] transition-transform duration-300 hover:scale-105 hover:z-10"
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-bg-card shadow-lg">
         <Image
-          src={posterUrl(movie.poster_path, "w342")}
-          alt={movie.title}
+          src={posterUrl(item.poster_path, "w342")}
+          alt={item.title}
           fill
           sizes="180px"
           className="object-cover transition-opacity duration-300 group-hover:opacity-80"
@@ -26,7 +26,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
           <p className="text-sm font-semibold text-text-primary truncate">
-            {movie.title}
+            {item.title}
           </p>
           <div className="flex items-center gap-2 mt-1 text-xs text-text-secondary">
             <span className="flex items-center gap-1">
@@ -40,7 +40,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
         </div>
       </div>
       <p className="mt-2 text-sm text-text-secondary truncate group-hover:text-text-primary transition-colors">
-        {movie.title}
+        {item.title}
       </p>
     </Link>
   );

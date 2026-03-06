@@ -1,13 +1,13 @@
 import { useRef, useState, useCallback } from "react";
-import type { TMDBMovie } from "@/lib/tmdb";
+import type { MediaItem } from "@/lib/tmdb";
 import MovieCard from "./MovieCard";
 
 interface CarouselSectionProps {
   title: string;
-  movies: TMDBMovie[];
+  items: MediaItem[];
 }
 
-export default function CarouselSection({ title, movies }: CarouselSectionProps) {
+export default function CarouselSection({ title, items }: CarouselSectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -30,7 +30,7 @@ export default function CarouselSection({ title, movies }: CarouselSectionProps)
     setTimeout(checkScroll, 400);
   };
 
-  if (!movies.length) return null;
+  if (!items.length) return null;
 
   return (
     <section className="relative px-6 md:px-12 py-6">
@@ -54,8 +54,8 @@ export default function CarouselSection({ title, movies }: CarouselSectionProps)
           onScroll={checkScroll}
           className="flex gap-4 overflow-x-auto hide-scrollbar pb-2"
         >
-          {movies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
+          {items.map((item) => (
+            <MovieCard key={item.id} item={item} />
           ))}
         </div>
         {canScrollRight && (

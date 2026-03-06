@@ -51,7 +51,17 @@ export default function Layout({ children, user }: LayoutProps) {
                     : "text-text-secondary hover:text-white"
                 }`}
               >
-                Home
+                Movies
+              </Link>
+              <Link
+                href="/tv-shows"
+                className={`text-sm font-medium transition-colors ${
+                  router.pathname === "/tv-shows"
+                    ? "text-white"
+                    : "text-text-secondary hover:text-white"
+                }`}
+              >
+                TV Shows
               </Link>
               {user && (
                 <Link

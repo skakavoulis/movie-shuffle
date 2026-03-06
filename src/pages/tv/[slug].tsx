@@ -4,31 +4,31 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import type { User } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import {
-  getMovieDetails,
-  parseMovieIdFromSlug,
-  movieSlug,
+  getTVShowDetails,
+  parseTVIdFromSlug,
+  tvSlug,
   posterUrl,
   backdropUrl,
   profileUrl,
-  movieToMediaItem,
-  type TMDBMovieDetails,
+  tvShowToMediaItem,
+  type TMDBTVShowDetails,
 } from "@/lib/tmdb";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 
-interface MoviePageProps {
+interface TVPageProps {
   user: User | null;
-  movie: TMDBMovieDetails;
+  show: TMDBTVShowDetails;
 }
 
-export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
-  context,
+export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
+  context
 ) => {
   const slug = context.params?.slug as string;
-  const movieId = parseMovieIdFromSlug(slug);
+  const showId = parseTVIdFromSlug(slug);
 
-  if (!movieId) {
+  if (!showId) {
     return { notFound: true };
   }
 
@@ -38,62 +38,57 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
   } = await supabase.auth.getUser();
 
   try {
-    const movie = await getMovieDetails(movieId);
+    const show = await getTVShowDetails(showId);
 
-    const canonicalSlug = movieSlug(movie);
+    const canonicalSlug = tvSlug(show);
     if (slug !== canonicalSlug) {
       return {
         redirect: {
-          destination: `/movie/${canonicalSlug}`,
+          destination: `/tv/${canonicalSlug}`,
           permanent: true,
         },
       };
     }
 
-    return { props: { user, movie } };
+    return { props: { user, show } };
   } catch {
     return { notFound: true };
   }
 };
 
-function formatRuntime(minutes: number | null) {
-  if (!minutes) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-function formatCurrency(amount: number) {
-  if (!amount) return null;
-  return `$${(amount / 1_000_000).toFixed(1)}M`;
-}
-
-export default function MoviePage({
+export default function TVShowPage({
   user,
-  movie,
+  show,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const bgUrl = backdropUrl(movie.backdrop_path, "original");
-  const year = movie.release_date?.split("-")[0] ?? "";
-  const rating = movie.vote_average?.toFixed(1);
-  const director = movie.credits?.crew?.find((c) => c.job === "Director");
-  const cast = movie.credits?.cast?.slice(0, 12) ?? [];
-  const trailer = movie.videos?.results?.find(
+  const bgUrl = backdropUrl(show.backdrop_path, "original");
+  const year = show.first_air_date?.split("-")[0] ?? "";
+  const rating = show.vote_average?.toFixed(1);
+  const creators = show.created_by ?? [];
+  const cast = show.credits?.cast?.slice(0, 12) ?? [];
+  const trailer = show.videos?.results?.find(
     (v) =>
-      v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
+      v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")
   );
-  const similar = (movie.similar?.results ?? []).slice(0, 15).map(movieToMediaItem);
+  const similar = (show.similar?.results ?? []).slice(0, 15).map(tvShowToMediaItem);
+  const avgRuntime =
+    show.episode_run_time?.length > 0
+      ? Math.round(
+          show.episode_run_time.reduce((a, b) => a + b, 0) /
+            show.episode_run_time.length
+        )
+      : null;
 
   return (
     <Layout user={user}>
       <Head>
-        <title>{movie.title} — MovieShuffle</title>
-        <meta name="description" content={movie.overview} />
-        <meta property="og:title" content={movie.title} />
-        <meta property="og:description" content={movie.overview} />
-        {movie.backdrop_path && (
+        <title>{show.name} — MovieShuffle</title>
+        <meta name="description" content={show.overview} />
+        <meta property="og:title" content={show.name} />
+        <meta property="og:description" content={show.overview} />
+        {show.backdrop_path && (
           <meta
             property="og:image"
-            content={backdropUrl(movie.backdrop_path, "w1280") ?? ""}
+            content={backdropUrl(show.backdrop_path, "w1280") ?? ""}
           />
         )}
       </Head>
@@ -103,7 +98,7 @@ export default function MoviePage({
         {bgUrl ? (
           <Image
             src={bgUrl}
-            alt={movie.title}
+            alt={show.name}
             fill
             priority
             sizes="100vw"
@@ -123,8 +118,8 @@ export default function MoviePage({
           <div className="flex-shrink-0 w-[220px] md:w-[280px] mx-auto md:mx-0">
             <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
               <Image
-                src={posterUrl(movie.poster_path, "w500")}
-                alt={movie.title}
+                src={posterUrl(show.poster_path, "w500")}
+                alt={show.name}
                 fill
                 sizes="280px"
                 className="object-cover"
@@ -135,12 +130,12 @@ export default function MoviePage({
           {/* Info */}
           <div className="flex-1 min-w-0 pt-2 md:pt-8">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-              {movie.title}
+              {show.name}
             </h1>
 
-            {movie.tagline && (
+            {show.tagline && (
               <p className="mt-2 text-lg text-text-secondary italic">
-                &ldquo;{movie.tagline}&rdquo;
+                &ldquo;{show.tagline}&rdquo;
               </p>
             )}
 
@@ -148,16 +143,12 @@ export default function MoviePage({
             <div className="flex flex-wrap items-center gap-3 mt-4">
               {rating && (
                 <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400 text-sm font-semibold">
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                   {rating}
                   <span className="text-text-muted font-normal ml-1">
-                    ({movie.vote_count.toLocaleString()})
+                    ({show.vote_count.toLocaleString()})
                   </span>
                 </span>
               )}
@@ -166,22 +157,33 @@ export default function MoviePage({
                   {year}
                 </span>
               )}
-              {formatRuntime(movie.runtime) && (
+              <span className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm">
+                {show.number_of_seasons} {show.number_of_seasons === 1 ? "Season" : "Seasons"}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm">
+                {show.number_of_episodes} Episodes
+              </span>
+              {avgRuntime && (
                 <span className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm">
-                  {formatRuntime(movie.runtime)}
+                  ~{avgRuntime}m/ep
                 </span>
               )}
-              {movie.status !== "Released" && (
-                <span className="px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-medium">
-                  {movie.status}
+              {show.status !== "Ended" && show.status !== "Canceled" && (
+                <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm font-medium">
+                  {show.status}
+                </span>
+              )}
+              {(show.status === "Ended" || show.status === "Canceled") && (
+                <span className="px-3 py-1 rounded-full bg-text-muted/20 text-text-muted text-sm font-medium">
+                  {show.status}
                 </span>
               )}
             </div>
 
             {/* Genres */}
-            {movie.genres.length > 0 && (
+            {show.genres.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4">
-                {movie.genres.map((g) => (
+                {show.genres.map((g) => (
                   <span
                     key={g.id}
                     className="px-3 py-1 rounded-full border border-border text-text-secondary text-sm hover:bg-bg-hover transition-colors"
@@ -194,32 +196,26 @@ export default function MoviePage({
 
             {/* Overview */}
             <p className="mt-6 text-base md:text-lg text-text-primary/90 leading-relaxed max-w-3xl">
-              {movie.overview}
+              {show.overview}
             </p>
 
             {/* Quick facts */}
             <div className="flex flex-wrap gap-x-8 gap-y-3 mt-6 text-sm">
-              {director && (
+              {creators.length > 0 && (
                 <div>
-                  <span className="text-text-muted">Director</span>
+                  <span className="text-text-muted">
+                    {creators.length === 1 ? "Creator" : "Creators"}
+                  </span>
                   <p className="text-text-primary font-medium">
-                    {director.name}
+                    {creators.map((c) => c.name).join(", ")}
                   </p>
                 </div>
               )}
-              {formatCurrency(movie.budget) && (
+              {show.networks?.length > 0 && (
                 <div>
-                  <span className="text-text-muted">Budget</span>
+                  <span className="text-text-muted">Network</span>
                   <p className="text-text-primary font-medium">
-                    {formatCurrency(movie.budget)}
-                  </p>
-                </div>
-              )}
-              {formatCurrency(movie.revenue) && (
-                <div>
-                  <span className="text-text-muted">Revenue</span>
-                  <p className="text-text-primary font-medium">
-                    {formatCurrency(movie.revenue)}
+                    {show.networks.map((n) => n.name).join(", ")}
                   </p>
                 </div>
               )}
@@ -233,11 +229,7 @@ export default function MoviePage({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -291,13 +283,13 @@ export default function MoviePage({
 
         {/* Reviews */}
         <ReviewSection
-          reviews={movie.reviews?.results ?? []}
-          totalResults={movie.reviews?.total_results ?? 0}
+          reviews={show.reviews?.results ?? []}
+          totalResults={show.reviews?.total_results ?? 0}
         />
 
-        {/* Similar movies */}
+        {/* Similar shows */}
         {similar.length > 0 && (
-          <CarouselSection title="Similar Movies" items={similar} />
+          <CarouselSection title="Similar Shows" items={similar} />
         )}
       </div>
     </Layout>
