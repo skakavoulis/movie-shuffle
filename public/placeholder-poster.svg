@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="342" height="513" viewBox="0 0 342 513" fill="none">
+  <rect width="342" height="513" fill="#1a2236"/>
+  <path d="M171 220a30 30 0 100-60 30 30 0 000 60zm-15 10h30a20 20 0 0120 20v30h-70v-30a20 20 0 0120-20z" fill="#2a3654" opacity="0.5"/>
+  <text x="171" y="310" text-anchor="middle" fill="#5b6b7d" font-family="sans-serif" font-size="14">No Poster</text>
+</svg>
