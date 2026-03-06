@@ -9,9 +9,13 @@ import Layout from "@/components/Layout";
 import {
   posterUrl,
   movieHref,
+  tvHref,
   getMovieGenres,
   getMovieWatchProviders,
+  getTVGenres,
+  getTVWatchProviders,
   type TMDBMovie,
+  type TMDBTVShow,
   type TMDBGenre,
   type TMDBWatchProvider,
 } from "@/lib/tmdb";
@@ -22,15 +26,24 @@ import DiscoverFiltersModal, {
   type DiscoverFilters,
 } from "@/components/DiscoverFiltersModal";
 
+type DiscoverMediaType = "movie" | "tv";
+type DiscoverItem = TMDBMovie | TMDBTVShow;
+
+function isMovie(item: DiscoverItem): item is TMDBMovie {
+  return "title" in item && "release_date" in item;
+}
+
 interface DiscoverProps {
   user: User | null;
   genres: TMDBGenre[];
   providers: TMDBWatchProvider[];
+  tvGenres: TMDBGenre[];
+  tvProviders: TMDBWatchProvider[];
 }
 
 const SWIPE_THRESHOLD = 80;
 
-const GENRE_MAP: Record<number, string> = {
+const MOVIE_GENRE_MAP: Record<number, string> = {
   28: "Action",
   12: "Adventure",
   16: "Animation",
@@ -52,10 +65,38 @@ const GENRE_MAP: Record<number, string> = {
   37: "Western",
 };
 
-function buildFilterParams(filters: DiscoverFilters): string {
+const TV_GENRE_MAP: Record<number, string> = {
+  10759: "Action & Adventure",
+  16: "Animation",
+  35: "Comedy",
+  80: "Crime",
+  99: "Documentary",
+  18: "Drama",
+  10751: "Family",
+  10762: "Kids",
+  9648: "Mystery",
+  10763: "News",
+  10764: "Reality",
+  10765: "Sci-Fi & Fantasy",
+  10766: "Soap",
+  10767: "Talk",
+  10768: "War & Politics",
+  37: "Western",
+};
+
+function buildFilterParams(
+  mediaType: DiscoverMediaType,
+  filters: DiscoverFilters,
+): string {
   const params = new URLSearchParams();
+  params.set("type", mediaType);
   if (filters.releaseYearGte) {
-    params.set("primary_release_date.gte", `${filters.releaseYearGte}-01-01`);
+    const date = `${filters.releaseYearGte}-01-01`;
+    if (mediaType === "tv") {
+      params.set("first_air_date.gte", date);
+    } else {
+      params.set("primary_release_date.gte", date);
+    }
   }
   if (filters.voteAverageGte > 0) {
     params.set("vote_average.gte", String(filters.voteAverageGte));
@@ -84,29 +125,41 @@ export const getServerSideProps: GetServerSideProps<DiscoverProps> = async (
 
   let genres: TMDBGenre[] = [];
   let providers: TMDBWatchProvider[] = [];
+  let tvGenres: TMDBGenre[] = [];
+  let tvProviders: TMDBWatchProvider[] = [];
 
   try {
-    const [genreData, providerData] = await Promise.all([
-      getMovieGenres(),
-      getMovieWatchProviders("US"),
-    ]);
-    genres = genreData.genres;
-    providers = providerData.results
+    const [movieGenreData, movieProviderData, tvGenreData, tvProviderData] =
+      await Promise.all([
+        getMovieGenres(),
+        getMovieWatchProviders("US"),
+        getTVGenres(),
+        getTVWatchProviders("US"),
+      ]);
+    genres = movieGenreData.genres;
+    providers = movieProviderData.results
+      .sort((a, b) => a.display_priority - b.display_priority)
+      .slice(0, 30);
+    tvGenres = tvGenreData.genres;
+    tvProviders = tvProviderData.results
       .sort((a, b) => a.display_priority - b.display_priority)
       .slice(0, 30);
   } catch {
     // page still works without filter data
   }
 
-  return { props: { user, genres, providers } };
+  return { props: { user, genres, providers, tvGenres, tvProviders } };
 };
 
 export default function DiscoverPage({
   user,
   genres,
   providers,
+  tvGenres,
+  tvProviders,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const [queue, setQueue] = useState<TMDBMovie[]>([]);
+  const [mediaType, setMediaType] = useState<DiscoverMediaType>("movie");
+  const [queue, setQueue] = useState<DiscoverItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [noResults, setNoResults] = useState(false);
   const [filters, setFilters] = useState<DiscoverFilters>(DEFAULT_FILTERS);
@@ -115,12 +168,14 @@ export default function DiscoverPage({
   const seenIds = useRef(new Set<number>());
   const fetchingRef = useRef(false);
   const filtersRef = useRef(filters);
+  const mediaTypeRef = useRef(mediaType);
   const cardRef = useRef<HTMLDivElement>(null);
   const throwingRef = useRef(false);
   const throwTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const dragState = useRef({ active: false, startX: 0, startY: 0, dx: 0 });
 
   filtersRef.current = filters;
+  mediaTypeRef.current = mediaType;
 
   const { setWatchlistStatus } = useWatchlist();
 
@@ -129,12 +184,12 @@ export default function DiscoverPage({
     fetchingRef.current = true;
     setNoResults(false);
     try {
-      const qs = buildFilterParams(filtersRef.current);
-      const url = `/api/discover${qs ? `?${qs}` : ""}`;
+      const qs = buildFilterParams(mediaTypeRef.current, filtersRef.current);
+      const url = `/api/discover?${qs}`;
       const res = await fetch(url);
       if (!res.ok) return;
-      const movies: TMDBMovie[] = await res.json();
-      const fresh = movies.filter((m) => !seenIds.current.has(m.id));
+      const results: DiscoverItem[] = await res.json();
+      const fresh = results.filter((m) => !seenIds.current.has(m.id));
       if (fresh.length === 0) {
         setNoResults(true);
       } else {
@@ -149,6 +204,18 @@ export default function DiscoverPage({
   }, []);
 
   useEffect(() => {
+    fetchBatch();
+  }, [fetchBatch]);
+
+  const switchMediaType = useCallback((next: DiscoverMediaType) => {
+    if (next === mediaTypeRef.current) return;
+    mediaTypeRef.current = next;
+    setMediaType(next);
+    seenIds.current.clear();
+    setQueue([]);
+    setNoResults(false);
+    setLoading(true);
+    fetchingRef.current = false;
     fetchBatch();
   }, [fetchBatch]);
 
@@ -193,14 +260,14 @@ export default function DiscoverPage({
     (direction: "left" | "right") => {
       if (throwingRef.current || !queue[0]) return;
       throwingRef.current = true;
+      const item = queue[0];
 
       if (direction === "right") {
-        const movie = queue[0];
         setWatchlistStatus({
-          mediaType: "movie",
-          mediaId: movie.id,
-          title: movie.title,
-          poster_path: movie.poster_path,
+          mediaType: mediaTypeRef.current,
+          mediaId: item.id,
+          title: isMovie(item) ? item.title : item.name,
+          poster_path: item.poster_path,
           status: "want_to_watch",
         });
       }
@@ -235,7 +302,7 @@ export default function DiscoverPage({
 
       throwTimerRef.current = setTimeout(advanceQueue, 400);
     },
-    [queue, setWatchlistStatus, advanceQueue],
+    [queue, setWatchlistStatus, advanceQueue]
   );
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -348,8 +415,10 @@ export default function DiscoverPage({
     return () => clearTimeout(throwTimerRef.current);
   }, []);
 
-  const currentMovie = queue[0];
+  const currentItem = queue[0];
   const filterCount = activeFilterCount(filters);
+  const displayGenres = mediaType === "movie" ? genres : tvGenres;
+  const displayProviders = mediaType === "movie" ? providers : tvProviders;
 
   return (
     <Layout user={user}>
@@ -359,13 +428,36 @@ export default function DiscoverPage({
 
       <div className="flex flex-col items-center min-h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">
         {/* Header row */}
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex flex-wrap items-center gap-3 mb-5">
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
             Discover
           </h1>
           <span className="px-2.5 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-semibold tracking-wide uppercase">
             Swipe
           </span>
+          {/* Movies / TV switch */}
+          <div className="flex rounded-lg bg-bg-card border border-border p-0.5">
+            <button
+              onClick={() => switchMediaType("movie")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                mediaType === "movie"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-text-secondary hover:text-white"
+              }`}
+            >
+              Movies
+            </button>
+            <button
+              onClick={() => switchMediaType("tv")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                mediaType === "tv"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-text-secondary hover:text-white"
+              }`}
+            >
+              TV Shows
+            </button>
+          </div>
           <button
             onClick={() => setFiltersOpen(true)}
             className={`relative ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
@@ -412,7 +504,7 @@ export default function DiscoverPage({
           <div className="flex flex-col items-center justify-center flex-1 py-20">
             <div className="w-10 h-10 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             <p className="text-text-muted text-sm mt-4">
-              Finding movies for you...
+              Finding {mediaType === "movie" ? "movies" : "shows"} for you...
             </p>
           </div>
         ) : noResults && queue.length === 0 ? (
@@ -431,7 +523,7 @@ export default function DiscoverPage({
               />
             </svg>
             <p className="text-text-secondary text-lg font-medium mb-1">
-              No movies found
+              No {mediaType === "movie" ? "movies" : "shows"} found
             </p>
             <p className="text-text-muted text-sm mb-4 text-center max-w-xs">
               Try adjusting your filters for more results
@@ -447,25 +539,33 @@ export default function DiscoverPage({
           <div className="flex flex-col items-center justify-center flex-1 py-20">
             <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             <p className="text-text-secondary text-sm mt-4">
-              Loading more movies...
+              Loading more {mediaType === "movie" ? "movies" : "shows"}...
             </p>
           </div>
         ) : (
           <>
             {/* Card stack */}
             <div className="relative w-[78vw] max-w-[640px] aspect-[2/3] select-none flex-shrink-0">
-              {queue.slice(0, 3).map((movie, index) => {
+              {queue.slice(0, 3).map((item, index) => {
                 const isTop = index === 0;
-                const movieGenres = movie.genre_ids
+                const genreMap =
+                  mediaType === "movie" ? MOVIE_GENRE_MAP : TV_GENRE_MAP;
+                const itemGenres = item.genre_ids
                   .slice(0, 2)
-                  .map((id) => GENRE_MAP[id])
+                  .map((id) => genreMap[id])
                   .filter(Boolean);
-                const year = movie.release_date?.split("-")[0];
-                const rating = movie.vote_average?.toFixed(1);
+                const title = isMovie(item) ? item.title : item.name;
+                const year = isMovie(item)
+                  ? item.release_date?.split("-")[0]
+                  : item.first_air_date?.split("-")[0];
+                const rating = item.vote_average?.toFixed(1);
+                const href = isMovie(item)
+                  ? movieHref(item)
+                  : tvHref(item);
 
                 return (
                   <div
-                    key={movie.id}
+                    key={item.id}
                     ref={isTop ? cardRef : undefined}
                     className="absolute inset-0 rounded-2xl overflow-hidden bg-bg-card ring-1 ring-white/10"
                     style={{
@@ -489,8 +589,8 @@ export default function DiscoverPage({
                     onTransitionEnd={isTop ? onTransitionEnd : undefined}
                   >
                     <Image
-                      src={posterUrl(movie.poster_path, "w500")}
-                      alt={movie.title}
+                      src={posterUrl(item.poster_path, "w500")}
+                      alt={title}
                       fill
                       sizes="(max-width: 768px) 78vw, 340px"
                       className="object-cover pointer-events-none"
@@ -518,11 +618,11 @@ export default function DiscoverPage({
                       Skip
                     </div>
 
-                    {/* Movie info overlay */}
+                    {/* Info overlay */}
                     <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
-                      {movieGenres.length > 0 && (
+                      {itemGenres.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-2">
-                          {movieGenres.map((g) => (
+                          {itemGenres.map((g) => (
                             <span
                               key={g}
                               className="px-2 py-0.5 rounded-full bg-white/15 text-white/80 text-xs font-medium backdrop-blur-sm"
@@ -533,7 +633,7 @@ export default function DiscoverPage({
                         </div>
                       )}
                       <h2 className="text-xl font-bold text-white leading-tight">
-                        {movie.title}
+                        {title}
                       </h2>
                       <div className="flex items-center gap-3 mt-1 text-sm text-white/70">
                         {year && <span>{year}</span>}
@@ -551,10 +651,10 @@ export default function DiscoverPage({
                         )}
                       </div>
                       <p className="mt-2 text-sm text-white/60 line-clamp-2 leading-relaxed">
-                        {movie.overview}
+                        {item.overview}
                       </p>
                       <Link
-                        href={movieHref(movie)}
+                        href={href}
                         className="inline-flex items-center gap-1 mt-2 text-xs text-accent font-semibold hover:text-accent-hover transition-colors pointer-events-auto"
                       >
                         View Details
@@ -600,9 +700,13 @@ export default function DiscoverPage({
                 </svg>
               </button>
 
-              {currentMovie && (
+              {currentItem && (
                 <Link
-                  href={movieHref(currentMovie)}
+                  href={
+                    isMovie(currentItem)
+                      ? movieHref(currentItem)
+                      : tvHref(currentItem)
+                  }
                   className="w-12 h-12 rounded-full bg-bg-card border-2 border-blue-400/30 flex items-center justify-center text-blue-400 hover:bg-blue-400/10 hover:border-blue-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
                   aria-label="View movie details"
                 >
@@ -659,8 +763,8 @@ export default function DiscoverPage({
         onClose={() => setFiltersOpen(false)}
         onApply={applyFilters}
         current={filters}
-        genres={genres}
-        providers={providers}
+        genres={displayGenres}
+        providers={displayProviders}
       />
     </Layout>
   );

@@ -317,6 +317,28 @@ export async function discoverMovies(params: Record<string, string>) {
   });
 }
 
+export async function getTVGenres() {
+  return cached("genres:tv", () =>
+    tmdbFetch<{ genres: TMDBGenre[] }>("/genre/tv/list"),
+  );
+}
+
+export async function getTVWatchProviders(region = "US") {
+  return cached(`providers:tv:${region}`, () =>
+    tmdbFetch<{ results: TMDBWatchProvider[] }>("/watch/providers/tv", {
+      watch_region: region,
+    }),
+  );
+}
+
+export async function discoverTVShows(params: Record<string, string>) {
+  return tmdbFetch<TMDBTVListResponse>("/discover/tv", {
+    include_adult: "false",
+    sort_by: "popularity.desc",
+    ...params,
+  });
+}
+
 export function providerLogoUrl(
   path: string | null,
   size: "w45" | "w92" | "w154" | "original" = "w92",

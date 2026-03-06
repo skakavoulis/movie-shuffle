@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { discoverMovies } from "@/lib/tmdb";
+import { discoverMovies, discoverTVShows } from "@/lib/tmdb";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,6 +11,9 @@ export default async function handler(
   }
 
   try {
+    const type = (req.query.type as string) || "movie";
+    const isTV = type === "tv";
+
     const params: Record<string, string> = {
       include_adult: "false",
       sort_by: "popularity.desc",
@@ -18,11 +21,18 @@ export default async function handler(
 
     const q = req.query;
 
-    if (q["primary_release_date.gte"]) {
-      params["primary_release_date.gte"] = String(
-        q["primary_release_date.gte"],
-      );
+    if (isTV) {
+      if (q["first_air_date.gte"]) {
+        params["first_air_date.gte"] = String(q["first_air_date.gte"]);
+      }
+    } else {
+      if (q["primary_release_date.gte"]) {
+        params["primary_release_date.gte"] = String(
+          q["primary_release_date.gte"],
+        );
+      }
     }
+
     if (q["vote_average.gte"]) {
       params["vote_average.gte"] = String(q["vote_average.gte"]);
     }
@@ -35,7 +45,8 @@ export default async function handler(
       params["with_watch_monetization_types"] = "flatrate";
     }
 
-    const firstPage = await discoverMovies({ ...params, page: "1" });
+    const discover = isTV ? discoverTVShows : discoverMovies;
+    const firstPage = await discover({ ...params, page: "1" });
     const maxPage = Math.min(firstPage.total_pages, 30);
 
     const randomPage =
@@ -44,7 +55,7 @@ export default async function handler(
     const data =
       randomPage === 1
         ? firstPage
-        : await discoverMovies({ ...params, page: String(randomPage) });
+        : await discover({ ...params, page: String(randomPage) });
 
     const filtered = data.results.filter(
       (m) => m.poster_path && m.overview && m.vote_average > 0,
@@ -58,7 +69,7 @@ export default async function handler(
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json(filtered);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to fetch movies";
+    const msg = e instanceof Error ? e.message : "Failed to fetch";
     return res.status(500).json({ error: msg });
   }
 }
