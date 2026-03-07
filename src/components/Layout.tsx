@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabaseClient";
 import type { User } from "@supabase/supabase-js";
 import { useState, useRef, useEffect } from "react";
 import SearchBar from "./SearchBar";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -364,7 +363,6 @@ export default function Layout({ children, user }: LayoutProps) {
           </div>
         </footer>
       </div>
-      <SpeedInsights />
     </>
   );
 }
