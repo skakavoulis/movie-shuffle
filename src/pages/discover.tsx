@@ -41,6 +41,34 @@ interface DiscoverProps {
   tvProviders: TMDBWatchProvider[];
 }
 
+const STORAGE_KEY_FILTERS = "discover-filters";
+const STORAGE_KEY_MEDIA_TYPE = "discover-media-type";
+
+function loadFilters(): DiscoverFilters | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FILTERS);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      typeof parsed.releaseYearGte === "string" &&
+      typeof parsed.voteAverageGte === "number" &&
+      Array.isArray(parsed.genreIds) &&
+      Array.isArray(parsed.providerIds)
+    ) {
+      return parsed as DiscoverFilters;
+    }
+  } catch {}
+  return null;
+}
+
+function loadMediaType(): DiscoverMediaType | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_MEDIA_TYPE);
+    if (raw === "movie" || raw === "tv") return raw;
+  } catch {}
+  return null;
+}
+
 const SWIPE_THRESHOLD = 80;
 
 const MOVIE_GENRE_MAP: Record<number, string> = {
@@ -174,6 +202,8 @@ export default function DiscoverPage({
   const throwTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const dragState = useRef({ active: false, startX: 0, startY: 0, dx: 0 });
 
+  const hydratedRef = useRef(false);
+
   filtersRef.current = filters;
   mediaTypeRef.current = mediaType;
 
@@ -204,20 +234,56 @@ export default function DiscoverPage({
   }, []);
 
   useEffect(() => {
-    fetchBatch();
-  }, [fetchBatch]);
-
-  const switchMediaType = useCallback((next: DiscoverMediaType) => {
-    if (next === mediaTypeRef.current) return;
-    mediaTypeRef.current = next;
-    setMediaType(next);
+    const savedFilters = loadFilters();
+    const savedType = loadMediaType();
+    if (savedType && savedType !== mediaTypeRef.current) {
+      mediaTypeRef.current = savedType;
+      setMediaType(savedType);
+    }
+    if (savedFilters) {
+      filtersRef.current = savedFilters;
+      setFilters(savedFilters);
+    }
+    hydratedRef.current = true;
     seenIds.current.clear();
     setQueue([]);
-    setNoResults(false);
     setLoading(true);
     fetchingRef.current = false;
     fetchBatch();
-  }, [fetchBatch]);
+    // Run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_FILTERS, JSON.stringify(filters));
+    } catch {}
+  }, [filters]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_MEDIA_TYPE, mediaType);
+    } catch {}
+  }, [mediaType]);
+
+  const switchMediaType = useCallback(
+    (next: DiscoverMediaType) => {
+      if (next === mediaTypeRef.current) return;
+
+      setFilters(DEFAULT_FILTERS);
+      mediaTypeRef.current = next;
+      setMediaType(next);
+      seenIds.current.clear();
+      setQueue([]);
+      setNoResults(false);
+      setLoading(true);
+      fetchingRef.current = false;
+      fetchBatch();
+    },
+    [fetchBatch],
+  );
 
   useEffect(() => {
     if (queue.length < 5 && !noResults) fetchBatch();
@@ -302,7 +368,7 @@ export default function DiscoverPage({
 
       throwTimerRef.current = setTimeout(advanceQueue, 400);
     },
-    [queue, setWatchlistStatus, advanceQueue]
+    [queue, setWatchlistStatus, advanceQueue],
   );
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -426,15 +492,9 @@ export default function DiscoverPage({
         <title>Discover — MovieShuffle</title>
       </Head>
 
-      <div className="flex flex-col items-center min-h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">
+      <div className="flex flex-col items-center h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">
         {/* Header row */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          <h1 className="text-2xl md:text-3xl font-bold text-text-primary">
-            Discover
-          </h1>
-          <span className="px-2.5 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-semibold tracking-wide uppercase">
-            Swipe
-          </span>
           {/* Movies / TV switch */}
           <div className="flex rounded-lg bg-bg-card border border-border p-0.5">
             <button
@@ -487,6 +547,10 @@ export default function DiscoverPage({
             )}
           </button>
         </div>
+        <span className="mt-4 text-xs text-text-muted text-center leading-relaxed flex-shrink-0">
+          Swipe right to add to watchlist, left to skip
+          <span className="hidden md:inline"> &middot; Use ← → arrow keys</span>
+        </span>
 
         {!user && (
           <p className="text-text-muted text-sm mb-4 text-center">
@@ -545,141 +609,141 @@ export default function DiscoverPage({
         ) : (
           <>
             {/* Card stack */}
-            <div className="relative w-[78vw] max-w-[640px] aspect-[2/3] select-none flex-shrink-0">
-              {queue.slice(0, 3).map((item, index) => {
-                const isTop = index === 0;
-                const genreMap =
-                  mediaType === "movie" ? MOVIE_GENRE_MAP : TV_GENRE_MAP;
-                const itemGenres = item.genre_ids
-                  .slice(0, 2)
-                  .map((id) => genreMap[id])
-                  .filter(Boolean);
-                const title = isMovie(item) ? item.title : item.name;
-                const year = isMovie(item)
-                  ? item.release_date?.split("-")[0]
-                  : item.first_air_date?.split("-")[0];
-                const rating = item.vote_average?.toFixed(1);
-                const href = isMovie(item)
-                  ? movieHref(item)
-                  : tvHref(item);
+            <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
+              <div className="relative w-[78vw] max-w-[640px] aspect-[2/3] max-h-full select-none">
+                {queue.slice(0, 3).map((item, index) => {
+                  const isTop = index === 0;
+                  const genreMap =
+                    mediaType === "movie" ? MOVIE_GENRE_MAP : TV_GENRE_MAP;
+                  const itemGenres = item.genre_ids
+                    .slice(0, 2)
+                    .map((id) => genreMap[id])
+                    .filter(Boolean);
+                  const title = isMovie(item) ? item.title : item.name;
+                  const year = isMovie(item)
+                    ? item.release_date?.split("-")[0]
+                    : item.first_air_date?.split("-")[0];
+                  const rating = item.vote_average?.toFixed(1);
+                  const href = isMovie(item) ? movieHref(item) : tvHref(item);
 
-                return (
-                  <div
-                    key={item.id}
-                    ref={isTop ? cardRef : undefined}
-                    className="absolute inset-0 rounded-2xl overflow-hidden bg-bg-card ring-1 ring-white/10"
-                    style={{
-                      zIndex: 10 - index,
-                      transform: isTop
-                        ? undefined
-                        : `scale(${1 - index * 0.04}) translateY(${index * 10}px)`,
-                      transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
-                      touchAction: isTop ? "none" : undefined,
-                      willChange: isTop ? "transform" : undefined,
-                      cursor: isTop ? "grab" : undefined,
-                      pointerEvents: isTop ? undefined : "none",
-                      boxShadow: isTop
-                        ? "0 25px 50px -12px rgba(0,0,0,0.6)"
-                        : "0 10px 30px -10px rgba(0,0,0,0.4)",
-                    }}
-                    onPointerDown={isTop ? onPointerDown : undefined}
-                    onPointerMove={isTop ? onPointerMove : undefined}
-                    onPointerUp={isTop ? onPointerUp : undefined}
-                    onPointerCancel={isTop ? onPointerCancel : undefined}
-                    onTransitionEnd={isTop ? onTransitionEnd : undefined}
-                  >
-                    <Image
-                      src={posterUrl(item.poster_path, "w500")}
-                      alt={title}
-                      fill
-                      sizes="(max-width: 768px) 78vw, 340px"
-                      className="object-cover pointer-events-none"
-                      priority={index === 0}
-                      draggable={false}
-                    />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent pointer-events-none" />
-
-                    {/* LIKE stamp */}
+                  return (
                     <div
-                      data-stamp="like"
-                      className="absolute top-6 left-4 border-[3px] border-green-400 text-green-400 text-xl font-black px-3 py-1.5 rounded-lg -rotate-12 pointer-events-none uppercase tracking-wider"
-                      style={{ opacity: 0, transition: "opacity 0.1s" }}
+                      key={item.id}
+                      ref={isTop ? cardRef : undefined}
+                      className="absolute inset-0 rounded-2xl overflow-hidden bg-bg-card ring-1 ring-white/10"
+                      style={{
+                        zIndex: 10 - index,
+                        transform: isTop
+                          ? undefined
+                          : `scale(${1 - index * 0.04}) translateY(${index * 10}px)`,
+                        transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+                        touchAction: isTop ? "none" : undefined,
+                        willChange: isTop ? "transform" : undefined,
+                        cursor: isTop ? "grab" : undefined,
+                        pointerEvents: isTop ? undefined : "none",
+                        boxShadow: isTop
+                          ? "0 25px 50px -12px rgba(0,0,0,0.6)"
+                          : "0 10px 30px -10px rgba(0,0,0,0.4)",
+                      }}
+                      onPointerDown={isTop ? onPointerDown : undefined}
+                      onPointerMove={isTop ? onPointerMove : undefined}
+                      onPointerUp={isTop ? onPointerUp : undefined}
+                      onPointerCancel={isTop ? onPointerCancel : undefined}
+                      onTransitionEnd={isTop ? onTransitionEnd : undefined}
                     >
-                      Watchlist
-                    </div>
+                      <Image
+                        src={posterUrl(item.poster_path, "w500")}
+                        alt={title}
+                        fill
+                        sizes="(max-width: 768px) 78vw, 340px"
+                        className="object-cover pointer-events-none"
+                        priority={index === 0}
+                        draggable={false}
+                      />
 
-                    {/* SKIP stamp */}
-                    <div
-                      data-stamp="skip"
-                      className="absolute top-6 right-4 border-[3px] border-red-400 text-red-400 text-xl font-black px-3 py-1.5 rounded-lg rotate-12 pointer-events-none uppercase tracking-wider"
-                      style={{ opacity: 0, transition: "opacity 0.1s" }}
-                    >
-                      Skip
-                    </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent pointer-events-none" />
 
-                    {/* Info overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
-                      {itemGenres.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {itemGenres.map((g) => (
-                            <span
-                              key={g}
-                              className="px-2 py-0.5 rounded-full bg-white/15 text-white/80 text-xs font-medium backdrop-blur-sm"
-                            >
-                              {g}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <h2 className="text-xl font-bold text-white leading-tight">
-                        {title}
-                      </h2>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-white/70">
-                        {year && <span>{year}</span>}
-                        {rating && rating !== "0.0" && (
-                          <span className="flex items-center gap-1">
-                            <svg
-                              className="w-3.5 h-3.5 text-yellow-400"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            {rating}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm text-white/60 line-clamp-2 leading-relaxed">
-                        {item.overview}
-                      </p>
-                      <Link
-                        href={href}
-                        className="inline-flex items-center gap-1 mt-2 text-xs text-accent font-semibold hover:text-accent-hover transition-colors pointer-events-auto"
+                      {/* LIKE stamp */}
+                      <div
+                        data-stamp="like"
+                        className="absolute top-6 left-4 border-[3px] border-green-400 text-green-400 text-xl font-black px-3 py-1.5 rounded-lg -rotate-12 pointer-events-none uppercase tracking-wider"
+                        style={{ opacity: 0, transition: "opacity 0.1s" }}
                       >
-                        View Details
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                          viewBox="0 0 24 24"
+                        Watchlist
+                      </div>
+
+                      {/* SKIP stamp */}
+                      <div
+                        data-stamp="skip"
+                        className="absolute top-6 right-4 border-[3px] border-red-400 text-red-400 text-xl font-black px-3 py-1.5 rounded-lg rotate-12 pointer-events-none uppercase tracking-wider"
+                        style={{ opacity: 0, transition: "opacity 0.1s" }}
+                      >
+                        Skip
+                      </div>
+
+                      {/* Info overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
+                        {itemGenres.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {itemGenres.map((g) => (
+                              <span
+                                key={g}
+                                className="px-2 py-0.5 rounded-full bg-white/15 text-white/80 text-xs font-medium backdrop-blur-sm"
+                              >
+                                {g}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <h2 className="text-xl font-bold text-white leading-tight">
+                          {title}
+                        </h2>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-white/70">
+                          {year && <span>{year}</span>}
+                          {rating && rating !== "0.0" && (
+                            <span className="flex items-center gap-1">
+                              <svg
+                                className="w-3.5 h-3.5 text-yellow-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              {rating}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-2 text-sm text-white/60 line-clamp-2 leading-relaxed">
+                          {item.overview}
+                        </p>
+                        <Link
+                          href={href}
+                          className="inline-flex items-center gap-1 mt-2 text-xs text-accent font-semibold hover:text-accent-hover transition-colors pointer-events-auto"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </Link>
+                          View Details
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2.5}
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-center gap-5 mt-7 flex-shrink-0">
+            <div className="flex items-center justify-center gap-5 py-3 flex-shrink-0">
               <button
                 onClick={() => throwCard("left")}
                 className="w-16 h-16 rounded-full bg-bg-card border-2 border-red-400/30 flex items-center justify-center text-red-400 hover:bg-red-400/10 hover:border-red-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
@@ -746,14 +810,6 @@ export default function DiscoverPage({
                 </svg>
               </button>
             </div>
-
-            <p className="mt-4 text-xs text-text-muted text-center leading-relaxed flex-shrink-0">
-              Swipe right to add to watchlist, left to skip
-              <span className="hidden md:inline">
-                {" "}
-                &middot; Use ← → arrow keys
-              </span>
-            </p>
           </>
         )}
       </div>
