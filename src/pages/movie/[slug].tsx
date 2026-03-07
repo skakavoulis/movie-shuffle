@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
@@ -99,6 +100,26 @@ export default function MoviePage({
   const similar = (movie.similar?.results ?? [])
     .slice(0, 15)
     .map(movieToMediaItem);
+
+  const [trailerOpen, setTrailerOpen] = useState(false);
+
+  useEffect(() => {
+    if (trailerOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [trailerOpen]);
+
+  useEffect(() => {
+    if (!trailerOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setTrailerOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [trailerOpen]);
 
   return (
     <Layout user={user}>
@@ -245,11 +266,9 @@ export default function MoviePage({
             {/* Actions */}
             <div className="flex items-center gap-3 mt-6">
               {trailer && (
-                <a
-                  href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20"
+                <button
+                  onClick={() => setTrailerOpen(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20 whitespace-nowrap"
                 >
                   <svg
                     className="w-5 h-5"
@@ -263,7 +282,7 @@ export default function MoviePage({
                     />
                   </svg>
                   Watch Trailer
-                </a>
+                </button>
               )}
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <LikeButton
@@ -272,11 +291,7 @@ export default function MoviePage({
                   title={movie.title}
                   poster_path={movie.poster_path}
                   size="lg"
-                >
-                  <span className="text-sm text-text-secondary font-medium">
-                    Like
-                  </span>
-                </LikeButton>
+                />
               </div>
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <WatchlistButton
@@ -346,6 +361,46 @@ export default function MoviePage({
           <CarouselSection title="Similar Movies" items={similar} />
         )}
       </div>
+
+      {/* Trailer modal */}
+      {trailer && trailerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setTrailerOpen(false)}
+          />
+          <div className="relative w-full max-w-4xl mx-4">
+            <button
+              onClick={() => setTrailerOpen(false)}
+              className="absolute -top-10 right-0 p-1.5 rounded-lg text-white/70 hover:text-white transition-colors"
+              aria-label="Close trailer"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`}
+                title={`${movie.title} Trailer`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

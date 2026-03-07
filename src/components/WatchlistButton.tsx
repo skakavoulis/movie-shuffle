@@ -142,11 +142,6 @@ export default function WatchlistButton({
               className={sizeClasses[size]}
             />
           )}
-          {showLabel && (
-            <span className="text-sm text-text-secondary font-medium">
-              {activeConfig?.label ?? "Watchlist"}
-            </span>
-          )}
         </span>
       </button>
 
