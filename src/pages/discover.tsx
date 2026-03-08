@@ -25,6 +25,7 @@ import DiscoverFiltersModal, {
   activeFilterCount,
   type DiscoverFilters,
 } from "@/components/DiscoverFiltersModal";
+import { pickCulture } from "@/lib/culture";
 
 type DiscoverMediaType = "movie" | "tv";
 type DiscoverItem = TMDBMovie | TMDBTVShow;
@@ -134,11 +135,9 @@ function buildFilterParams(
   }
   if (filters.providerIds.length > 0) {
     params.set("with_watch_providers", filters.providerIds.join("|"));
-    const region =
-      typeof window !== "undefined"
-        ? (navigator.language || "en-US").split("-")[1] || "US"
-        : "US";
-    params.set("watch_region", region);
+    const languages = navigator?.languages.join(",") ?? "";
+    const culture = pickCulture(languages);
+    params.set("watch_region", culture);
   }
   return params.toString();
 }
@@ -155,14 +154,15 @@ export const getServerSideProps: GetServerSideProps<DiscoverProps> = async (
   let providers: TMDBWatchProvider[] = [];
   let tvGenres: TMDBGenre[] = [];
   let tvProviders: TMDBWatchProvider[] = [];
+  const culture = pickCulture(context.req.headers["accept-language"]);
 
   try {
     const [movieGenreData, movieProviderData, tvGenreData, tvProviderData] =
       await Promise.all([
         getMovieGenres(),
-        getMovieWatchProviders("US"),
+        getMovieWatchProviders(culture),
         getTVGenres(),
-        getTVWatchProviders("US"),
+        getTVWatchProviders(culture),
       ]);
     genres = movieGenreData.genres;
     providers = movieProviderData.results

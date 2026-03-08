@@ -25,6 +25,7 @@ import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import WatchProvidersSection from "@/components/WatchProvidersSection";
+import { pickCulture } from "@/lib/culture";
 
 interface MoviePageProps {
   user: User | null;
@@ -63,7 +64,9 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
       };
     }
 
-    const watchOffer = pickWatchRegion(watchData.results)?.offer ?? null;
+    const culture = pickCulture(context.req.headers["accept-language"]);
+    const watchOffer =
+      pickWatchRegion(watchData.results, culture)?.offer ?? null;
 
     return { props: { user, movie, watchOffer } };
   } catch {

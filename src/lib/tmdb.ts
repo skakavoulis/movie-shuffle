@@ -301,7 +301,7 @@ export async function getMovieGenres() {
   );
 }
 
-export async function getMovieWatchProviders(region = "US") {
+export async function getMovieWatchProviders(region: string) {
   return cached(`providers:movie:${region}`, () =>
     tmdbFetch<{ results: TMDBWatchProvider[] }>("/watch/providers/movie", {
       watch_region: region,
@@ -323,7 +323,7 @@ export async function getTVGenres() {
   );
 }
 
-export async function getTVWatchProviders(region = "US") {
+export async function getTVWatchProviders(region: string) {
   return cached(`providers:tv:${region}`, () =>
     tmdbFetch<{ results: TMDBWatchProvider[] }>("/watch/providers/tv", {
       watch_region: region,
@@ -369,11 +369,12 @@ export async function getTVShowWatchProvidersById(tvId: number) {
 /** Prefer US, then first available region. */
 export function pickWatchRegion(
   results: Record<string, TMDBWatchProviderOffer>,
+  culture: string,
 ): { region: string; offer: TMDBWatchProviderOffer } | null {
-  const offer = results["US"] ?? Object.values(results)[0];
+  const offer = results[culture];
   if (!offer) return null;
-  const region = results["US"] ? "US" : Object.keys(results)[0];
-  return { region, offer };
+
+  return { region: culture, offer };
 }
 
 export function providerLogoUrl(
