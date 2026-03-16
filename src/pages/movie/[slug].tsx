@@ -311,7 +311,10 @@ export default function MoviePage({
         </div>
 
         {/* Where to watch */}
-        <WatchProvidersSection offer={watchOffer} />
+        <WatchProvidersSection
+          offer={watchOffer}
+          title={movie.title}
+        />
 
         {/* Cast */}
         {cast.length > 0 && (

@@ -317,7 +317,10 @@ export default function TVShowPage({
         </div>
 
         {/* Where to watch */}
-        <WatchProvidersSection offer={watchOffer} />
+        <WatchProvidersSection
+          offer={watchOffer}
+          title={show.name}
+        />
 
         {/* Cast */}
         {cast.length > 0 && (

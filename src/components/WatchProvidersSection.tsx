@@ -4,19 +4,24 @@ import {
   type TMDBWatchProvider,
   type TMDBWatchProviderOffer,
 } from "@/lib/tmdb";
+import { getProviderSearchUrl } from "@/lib/providerUrls";
 
 interface WatchProvidersSectionProps {
   offer: TMDBWatchProviderOffer | null;
+  /** Title used to build direct search URLs on each provider */
+  title: string;
 }
 
 function ProviderGroup({
   label,
   providers,
   watchLink,
+  title,
 }: {
   label: string;
   providers: TMDBWatchProvider[];
   watchLink: string;
+  title: string;
 }) {
   if (providers.length === 0) return null;
   return (
@@ -25,29 +30,32 @@ function ProviderGroup({
         {label}
       </p>
       <div className="flex flex-wrap gap-2">
-        {providers.map((p) => (
-          <a
-            key={p.provider_id}
-            href={watchLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-card border border-border hover:border-white/30 hover:bg-bg-hover transition-colors group"
-          >
-            {p.logo_path ? (
-              <Image
-                src={providerLogoUrl(p.logo_path, "w92")!}
-                alt=""
-                width={32}
-                height={32}
-                className="rounded object-contain flex-shrink-0"
-              />
-            ) : (
-              <span className="w-8 h-8 rounded bg-white/10 flex items-center justify-center text-text-muted text-xs font-bold flex-shrink-0">
-                {p.provider_name[0]}
-              </span>
-            )}
-          </a>
-        ))}
+        {providers.map((p) => {
+          const href = getProviderSearchUrl(p.provider_id, title) ?? watchLink;
+          return (
+            <a
+              key={p.provider_id}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-card border border-border hover:border-white/30 hover:bg-bg-hover transition-colors group"
+            >
+              {p.logo_path ? (
+                <Image
+                  src={providerLogoUrl(p.logo_path, "w92")!}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="rounded object-contain flex-shrink-0"
+                />
+              ) : (
+                <span className="w-8 h-8 rounded bg-white/10 flex items-center justify-center text-text-muted text-xs font-bold flex-shrink-0">
+                  {p.provider_name[0]}
+                </span>
+              )}
+            </a>
+          );
+        })}
       </div>
     </div>
   );
@@ -55,6 +63,7 @@ function ProviderGroup({
 
 export default function WatchProvidersSection({
   offer,
+  title,
 }: WatchProvidersSectionProps) {
   if (!offer?.link) return null;
 
@@ -84,23 +93,40 @@ export default function WatchProvidersSection({
             label="Stream"
             providers={flatrate}
             watchLink={offer.link}
+            title={title}
           />
         )}
         {free.length > 0 && (
-          <ProviderGroup label="Free" providers={free} watchLink={offer.link} />
+          <ProviderGroup
+            label="Free"
+            providers={free}
+            watchLink={offer.link}
+            title={title}
+          />
         )}
         {ads.length > 0 && (
           <ProviderGroup
             label="With ads"
             providers={ads}
             watchLink={offer.link}
+            title={title}
           />
         )}
         {rent.length > 0 && (
-          <ProviderGroup label="Rent" providers={rent} watchLink={offer.link} />
+          <ProviderGroup
+            label="Rent"
+            providers={rent}
+            watchLink={offer.link}
+            title={title}
+          />
         )}
         {buy.length > 0 && (
-          <ProviderGroup label="Buy" providers={buy} watchLink={offer.link} />
+          <ProviderGroup
+            label="Buy"
+            providers={buy}
+            watchLink={offer.link}
+            title={title}
+          />
         )}
       </div>
       <p className="mt-3 text-xs text-text-muted">
