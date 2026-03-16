@@ -49,14 +49,6 @@ export default function Layout({ children, user }: LayoutProps) {
     { href: "/", label: "Movies" },
     { href: "/tv-shows", label: "TV Shows" },
     { href: "/discover", label: "Discover" },
-    ...(user
-      ? [
-          { href: "/my-movies", label: "My Movies" },
-          { href: "/my-tv-shows", label: "My TV Shows" },
-          { href: "/watchlist", label: "Watchlist" },
-          { href: "/profile", label: "Profile" },
-        ]
-      : []),
   ];
 
   return (
@@ -71,7 +63,7 @@ export default function Layout({ children, user }: LayoutProps) {
               >
                 JustPickAMovie
               </Link>
-              <div className="hidden md:flex items-center gap-6">
+              <div className="hidden min-[1160px]:flex items-center gap-6">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
@@ -89,12 +81,12 @@ export default function Layout({ children, user }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden md:block">
+              <div className="hidden min-[1160px]:block">
                 <SearchBar />
               </div>
 
               {/* Desktop user menu */}
-              <div className="hidden md:block">
+              <div className="hidden min-[1160px]:block">
                 {user ? (
                   <div ref={menuRef} className="relative">
                     <button
@@ -136,6 +128,24 @@ export default function Layout({ children, user }: LayoutProps) {
                         >
                           Profile
                         </Link>
+                        <Link
+                          href="/watchlist"
+                          className="block px-4 py-3 text-sm text-text-secondary hover:bg-bg-hover hover:text-white transition-colors"
+                        >
+                          Watchlist
+                        </Link>
+                        <Link
+                          href="/my-movies"
+                          className="block px-4 py-3 text-sm text-text-secondary hover:bg-bg-hover hover:text-white transition-colors"
+                        >
+                          My Movies
+                        </Link>
+                        <Link
+                          href="/my-tv-shows"
+                          className="block px-4 py-3 text-sm text-text-secondary hover:bg-bg-hover hover:text-white transition-colors"
+                        >
+                          My TV Shows
+                        </Link>
                         <button
                           onClick={handleLogout}
                           className="w-full text-left px-4 py-3 text-sm text-text-secondary hover:bg-bg-hover hover:text-white transition-colors border-t border-border"
@@ -158,7 +168,7 @@ export default function Layout({ children, user }: LayoutProps) {
               {/* Mobile hamburger */}
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="md:hidden p-2 -mr-2 text-text-secondary hover:text-white transition-colors"
+                className="min-[1160px]:hidden p-2 -mr-2 text-text-secondary hover:text-white transition-colors"
                 aria-label="Toggle menu"
               >
                 <svg
@@ -190,7 +200,7 @@ export default function Layout({ children, user }: LayoutProps) {
 
         {/* Mobile menu overlay */}
         <div
-          className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${
+          className={`fixed inset-0 z-40 min-[1160px]:hidden transition-opacity duration-300 ${
             mobileOpen
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
@@ -268,40 +278,108 @@ export default function Layout({ children, user }: LayoutProps) {
                         />
                       </svg>
                     )}
-                    {link.label === "Watchlist" && (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                        />
-                      </svg>
-                    )}
-                    {link.label === "Profile" && (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    )}
                     {link.label}
                   </Link>
                 ))}
               </div>
+
+              {/* User menu items (when logged in) */}
+              {user && (
+                <div className="px-2 mb-4">
+                  <Link
+                    href="/profile"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                      router.pathname === "/profile"
+                        ? "text-white bg-white/5"
+                        : "text-text-secondary hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    Profile
+                  </Link>
+                  <Link
+                    href="/watchlist"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                      router.pathname === "/watchlist"
+                        ? "text-white bg-white/5"
+                        : "text-text-secondary hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                      />
+                    </svg>
+                    Watchlist
+                  </Link>
+                  <Link
+                    href="/my-movies"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                      router.pathname === "/my-movies"
+                        ? "text-white bg-white/5"
+                        : "text-text-secondary hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                    My Movies
+                  </Link>
+                  <Link
+                    href="/my-tv-shows"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                      router.pathname === "/my-tv-shows"
+                        ? "text-white bg-white/5"
+                        : "text-text-secondary hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                    My TV Shows
+                  </Link>
+                </div>
+              )}
 
               {/* Auth section */}
               <div className="px-6 pt-4 border-t border-border">
@@ -354,7 +432,8 @@ export default function Layout({ children, user }: LayoutProps) {
         <footer className="px-6 md:px-12 py-8 border-t border-border mt-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-text-muted">
             <p>
-              &copy; 2021-{new Date().getFullYear()} JustPickAMovie. Powered by TMDB.
+              &copy; 2021-{new Date().getFullYear()} JustPickAMovie. Powered by
+              TMDB.
             </p>
             <p>
               This product uses the TMDB API but is not endorsed or certified by

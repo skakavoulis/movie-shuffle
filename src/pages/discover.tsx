@@ -19,7 +19,7 @@ import {
   type TMDBGenre,
   type TMDBWatchProvider,
 } from "@/lib/tmdb";
-import { useWatchlist } from "@/context/WatchlistContext";
+import { useLikes } from "@/context/LikesContext";
 import DiscoverFiltersModal, {
   DEFAULT_FILTERS,
   activeFilterCount,
@@ -207,7 +207,7 @@ export default function DiscoverPage({
   filtersRef.current = filters;
   mediaTypeRef.current = mediaType;
 
-  const { setWatchlistStatus } = useWatchlist();
+  const { isLiked, toggleLike } = useLikes();
 
   const fetchBatch = useCallback(async () => {
     if (fetchingRef.current) return;
@@ -329,13 +329,15 @@ export default function DiscoverPage({
       const item = queue[0];
 
       if (direction === "right") {
-        setWatchlistStatus({
-          mediaType: mediaTypeRef.current,
-          mediaId: item.id,
-          title: isMovie(item) ? item.title : item.name,
-          poster_path: item.poster_path,
-          status: "want_to_watch",
-        });
+        const mediaType = mediaTypeRef.current;
+        if (!isLiked(mediaType, item.id)) {
+          toggleLike({
+            mediaType,
+            mediaId: item.id,
+            title: isMovie(item) ? item.title : item.name,
+            poster_path: item.poster_path,
+          });
+        }
       }
 
       const card = cardRef.current;
@@ -368,7 +370,7 @@ export default function DiscoverPage({
 
       throwTimerRef.current = setTimeout(advanceQueue, 400);
     },
-    [queue, setWatchlistStatus, advanceQueue],
+    [queue, isLiked, toggleLike, advanceQueue],
   );
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -548,7 +550,7 @@ export default function DiscoverPage({
           </button>
         </div>
         <span className="mt-4 text-xs text-text-muted text-center leading-relaxed flex-shrink-0">
-          Swipe right to add to watchlist, left to skip
+          Swipe right to like, left to skip
           <span className="hidden md:inline"> &middot; Use ← → arrow keys</span>
         </span>
 
@@ -560,7 +562,7 @@ export default function DiscoverPage({
             >
               Sign in
             </Link>{" "}
-            to save movies to your watchlist
+            to like movies and build your list
           </p>
         )}
 
@@ -669,7 +671,7 @@ export default function DiscoverPage({
                         className="absolute top-6 left-4 border-[3px] border-green-400 text-green-400 text-xl font-black px-3 py-1.5 rounded-lg -rotate-12 pointer-events-none uppercase tracking-wider"
                         style={{ opacity: 0, transition: "opacity 0.1s" }}
                       >
-                        Watchlist
+                        Like
                       </div>
 
                       {/* SKIP stamp */}
@@ -746,7 +748,7 @@ export default function DiscoverPage({
             <div className="flex items-center justify-center gap-5 py-3 flex-shrink-0">
               <button
                 onClick={() => throwCard("left")}
-                className="w-16 h-16 rounded-full bg-bg-card border-2 border-red-400/30 flex items-center justify-center text-red-400 hover:bg-red-400/10 hover:border-red-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
+                className="w-16 h-16 rounded-full bg-bg-card border-2 border-gray-400/30 flex items-center justify-center text-gray-400 hover:bg-gray-400/10 hover:border-gray-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
                 aria-label="Skip"
               >
                 <svg
@@ -792,8 +794,8 @@ export default function DiscoverPage({
 
               <button
                 onClick={() => throwCard("right")}
-                className="w-16 h-16 rounded-full bg-bg-card border-2 border-green-400/30 flex items-center justify-center text-green-400 hover:bg-green-400/10 hover:border-green-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
-                aria-label="Add to watchlist"
+                className="w-16 h-16 rounded-full bg-bg-card border-2 border-red-400/30 flex items-center justify-center text-red-400 hover:bg-red-400/10 hover:border-red-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
+                aria-label="Like"
               >
                 <svg
                   className="w-7 h-7"
@@ -805,7 +807,7 @@ export default function DiscoverPage({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                   />
                 </svg>
               </button>

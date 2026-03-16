@@ -13,7 +13,7 @@ export default function DiscoverCTASection() {
           }}
         />
 
-        <div className="relative flex flex-col items-center justify-center gap-10 lg:gap-14">
+        <div className="relative flex flex-col lg:flex-row items-center justify-center gap-10 lg:gap-14">
           {/* Swipe visual - card stack */}
           <div className="flex items-center justify-center gap-4 lg:gap-6">
             {/* Skip indicator */}
@@ -63,7 +63,7 @@ export default function DiscoverCTASection() {
               </div>
             </div>
 
-            {/* Watchlist indicator */}
+            {/* Like indicator */}
             <div className="flex flex-col items-center gap-2 text-green-400/90 animate-swipe-hint animate-delay-500">
               <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-green-500/10 border border-green-400/30 flex items-center justify-center">
                 <svg
@@ -76,12 +76,12 @@ export default function DiscoverCTASection() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                   />
                 </svg>
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider">
-                Watchlist
+                Like
               </span>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function DiscoverCTASection() {
               Can&apos;t decide what to watch?
             </h2>
             <p className="mt-3 md:mt-4 text-text-secondary text-base md:text-xl max-w-xl mx-auto">
-              Swipe your way to movie night — left to skip, right to save.
+              Swipe your way to movie night — left to skip, right to like.
               It&apos;s like Tinder, but for films.
             </p>
             <Link
