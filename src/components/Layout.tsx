@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabaseClient";
 import type { User } from "@supabase/supabase-js";
 import { useState, useRef, useEffect } from "react";
 import SearchBar from "./SearchBar";
+import RegionDropdown from "./RegionDropdown";
 import { useRegion } from "@/context/RegionContext";
 
 interface LayoutProps {
@@ -15,18 +16,13 @@ export default function Layout({ children, user }: LayoutProps) {
   const router = useRouter();
   const { region, setRegion, regions, loading } = useRegion();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [regionOpen, setRegionOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const regionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
-      }
-      if (regionRef.current && !regionRef.current.contains(e.target as Node)) {
-        setRegionOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -36,7 +32,6 @@ export default function Layout({ children, user }: LayoutProps) {
   useEffect(() => {
     setMobileOpen(false);
     setMenuOpen(false);
-    setRegionOpen(false);
   }, [router.asPath]);
 
   useEffect(() => {
@@ -85,63 +80,7 @@ export default function Layout({ children, user }: LayoutProps) {
                     {link.label}
                   </Link>
                 ))}
-                {!loading && (
-                  <div ref={regionRef} className="relative">
-                    <button
-                      onClick={() => setRegionOpen(!regionOpen)}
-                      className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-white transition-colors"
-                      aria-label="Select region"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0h.5a2.5 2.5 0 002.5-2.5V8m3.5-4.5V5a2.5 2.5 0 002.5 2.5h.5a2 2 0 012 2 2 2 0 104 0h.5a2.5 2.5 0 002.5-2.5V5M20.945 13H19a2 2 0 00-2-2v-1a2 2 0 00-2-2 2 2 0 00-2-2v-2.945"
-                        />
-                      </svg>
-                      <span>{region}</span>
-                      <svg
-                        className={`w-4 h-4 transition-transform ${regionOpen ? "rotate-180" : ""}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
-                    {regionOpen && regions.length > 0 && (
-                      <div className="absolute left-0 top-full mt-1 w-56 max-h-72 overflow-y-auto bg-bg-card border border-border rounded-lg shadow-xl z-50 py-1">
-                        {regions.map((r) => (
-                          <button
-                            key={r.iso_3166_1}
-                            onClick={() => {
-                              setRegion(r.iso_3166_1);
-                              setRegionOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                              region === r.iso_3166_1
-                                ? "text-accent font-medium bg-accent/10"
-                                : "text-text-secondary hover:text-white hover:bg-white/5"
-                            }`}
-                          >
-                            {r.english_name} ({r.iso_3166_1})
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <RegionDropdown key={router.asPath} />
               </div>
             </div>
 
