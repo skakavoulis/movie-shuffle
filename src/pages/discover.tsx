@@ -192,6 +192,7 @@ export default function DiscoverPage({
   const [noResults, setNoResults] = useState(false);
   const [filters, setFilters] = useState<DiscoverFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [likeBurst, setLikeBurst] = useState(false);
 
   const seenIds = useRef(new Set<number>());
   const fetchingRef = useRef(false);
@@ -329,6 +330,8 @@ export default function DiscoverPage({
       const item = queue[0];
 
       if (direction === "right") {
+        setLikeBurst(true);
+        setTimeout(() => setLikeBurst(false), 500);
         const mediaType = mediaTypeRef.current;
         if (!isLiked(mediaType, item.id)) {
           toggleLike({
@@ -357,16 +360,6 @@ export default function DiscoverPage({
 
       card.style.transition = "transform 0.45s ease-out";
       card.style.transform = `translateX(${throwX}px) rotate(${rotation}deg)`;
-
-      const likeStamp = card.querySelector(
-        '[data-stamp="like"]',
-      ) as HTMLElement | null;
-      const skipStamp = card.querySelector(
-        '[data-stamp="skip"]',
-      ) as HTMLElement | null;
-      if (likeStamp)
-        likeStamp.style.opacity = direction === "right" ? "1" : "0";
-      if (skipStamp) skipStamp.style.opacity = direction === "left" ? "1" : "0";
 
       throwTimerRef.current = setTimeout(advanceQueue, 400);
     },
@@ -403,17 +396,6 @@ export default function DiscoverPage({
     const lift = -Math.abs(ds.dx) * 0.04;
     card.style.transform = `translateX(${ds.dx}px) translateY(${lift}px) rotate(${rotation}deg)`;
 
-    const progress = Math.min(Math.abs(ds.dx) / SWIPE_THRESHOLD, 1);
-    const likeStamp = card.querySelector(
-      '[data-stamp="like"]',
-    ) as HTMLElement | null;
-    const skipStamp = card.querySelector(
-      '[data-stamp="skip"]',
-    ) as HTMLElement | null;
-    if (likeStamp)
-      likeStamp.style.opacity = ds.dx > 15 ? String(progress) : "0";
-    if (skipStamp)
-      skipStamp.style.opacity = ds.dx < -15 ? String(progress) : "0";
   }, []);
 
   const springBack = useCallback(() => {
@@ -422,14 +404,6 @@ export default function DiscoverPage({
     card.style.transition = "transform 0.35s cubic-bezier(0.25,0.8,0.25,1)";
     card.style.transform = "";
     card.style.cursor = "";
-    const likeStamp = card.querySelector(
-      '[data-stamp="like"]',
-    ) as HTMLElement | null;
-    const skipStamp = card.querySelector(
-      '[data-stamp="skip"]',
-    ) as HTMLElement | null;
-    if (likeStamp) likeStamp.style.opacity = "0";
-    if (skipStamp) skipStamp.style.opacity = "0";
   }, []);
 
   const onPointerUp = useCallback(
@@ -665,24 +639,6 @@ export default function DiscoverPage({
 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent pointer-events-none" />
 
-                      {/* LIKE stamp */}
-                      <div
-                        data-stamp="like"
-                        className="absolute top-6 left-4 border-[3px] border-green-400 text-green-400 text-xl font-black px-3 py-1.5 rounded-lg -rotate-12 pointer-events-none uppercase tracking-wider"
-                        style={{ opacity: 0, transition: "opacity 0.1s" }}
-                      >
-                        Like
-                      </div>
-
-                      {/* SKIP stamp */}
-                      <div
-                        data-stamp="skip"
-                        className="absolute top-6 right-4 border-[3px] border-red-400 text-red-400 text-xl font-black px-3 py-1.5 rounded-lg rotate-12 pointer-events-none uppercase tracking-wider"
-                        style={{ opacity: 0, transition: "opacity 0.1s" }}
-                      >
-                        Skip
-                      </div>
-
                       {/* Info overlay */}
                       <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
                         {itemGenres.length > 0 && (
@@ -794,12 +750,41 @@ export default function DiscoverPage({
 
               <button
                 onClick={() => throwCard("right")}
-                className="w-16 h-16 rounded-full bg-bg-card border-2 border-red-400/30 flex items-center justify-center text-red-400 hover:bg-red-400/10 hover:border-red-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg"
+                className="relative w-16 h-16 rounded-full bg-bg-card border-2 border-red-400/30 flex items-center justify-center text-red-400 hover:bg-red-400/10 hover:border-red-400/60 hover:scale-110 active:scale-90 transition-all shadow-lg overflow-visible"
                 aria-label="Like"
               >
+                {/* Explosion particles */}
+                {likeBurst &&
+                  [
+                    { tx: "-32px", ty: "0" },
+                    { tx: "32px", ty: "0" },
+                    { tx: "0", ty: "-32px" },
+                    { tx: "0", ty: "32px" },
+                    { tx: "-22px", ty: "-22px" },
+                    { tx: "22px", ty: "-22px" },
+                    { tx: "-22px", ty: "22px" },
+                    { tx: "22px", ty: "22px" },
+                  ].map((p, i) => (
+                    <span
+                      key={i}
+                      className="absolute left-1/2 top-1/2 w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 pointer-events-none"
+                      style={
+                        {
+                          "--tx": p.tx,
+                          "--ty": p.ty,
+                          animation:
+                            "like-burst-particle 0.5s ease-out forwards",
+                        } as React.CSSProperties
+                      }
+                    />
+                  ))}
                 <svg
-                  className="w-7 h-7"
-                  fill="none"
+                  className={`w-7 h-7 transition-colors duration-75 ${
+                    likeBurst
+                      ? "fill-red-500 text-red-500 animate-[like-heart-pop_0.5s_ease-out]"
+                      : "fill-none stroke-current"
+                  }`}
+                  fill={likeBurst ? "currentColor" : "none"}
                   stroke="currentColor"
                   strokeWidth={2}
                   viewBox="0 0 24 24"
