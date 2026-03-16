@@ -28,6 +28,8 @@ export function activeFilterCount(f: DiscoverFilters): number {
   return count;
 }
 
+type MediaType = "movie" | "tv";
+
 interface DiscoverFiltersModalProps {
   open: boolean;
   onClose: () => void;
@@ -35,6 +37,8 @@ interface DiscoverFiltersModalProps {
   current: DiscoverFilters;
   genres: TMDBGenre[];
   providers: TMDBWatchProvider[];
+  mediaType: MediaType;
+  onMediaTypeChange: (type: MediaType) => void;
 }
 
 export default function DiscoverFiltersModal({
@@ -44,6 +48,8 @@ export default function DiscoverFiltersModal({
   current,
   genres,
   providers,
+  mediaType,
+  onMediaTypeChange,
 }: DiscoverFiltersModalProps) {
   const [draft, setDraft] = useState<DiscoverFilters>(current);
 
@@ -124,6 +130,35 @@ export default function DiscoverFiltersModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {/* Movies / TV switch */}
+          <section>
+            <label className="block text-sm font-semibold text-text-primary mb-2">
+              Content type
+            </label>
+            <div className="flex rounded-lg bg-bg-primary border border-border p-0.5">
+              <button
+                onClick={() => onMediaTypeChange("movie")}
+                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  mediaType === "movie"
+                    ? "bg-accent text-white shadow-sm"
+                    : "text-text-secondary hover:text-white"
+                }`}
+              >
+                Movies
+              </button>
+              <button
+                onClick={() => onMediaTypeChange("tv")}
+                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  mediaType === "tv"
+                    ? "bg-accent text-white shadow-sm"
+                    : "text-text-secondary hover:text-white"
+                }`}
+              >
+                TV Shows
+              </button>
+            </div>
+          </section>
+
           {/* Release Year */}
           <section>
             <label className="block text-sm font-semibold text-text-primary mb-2">

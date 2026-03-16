@@ -478,32 +478,9 @@ export default function DiscoverPage({
       <div className="flex flex-col items-center h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">
         {/* Header row */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          {/* Movies / TV switch */}
-          <div className="flex rounded-lg bg-bg-card border border-border p-0.5">
-            <button
-              onClick={() => switchMediaType("movie")}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                mediaType === "movie"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-text-secondary hover:text-white"
-              }`}
-            >
-              Movies
-            </button>
-            <button
-              onClick={() => switchMediaType("tv")}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                mediaType === "tv"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-text-secondary hover:text-white"
-              }`}
-            >
-              TV Shows
-            </button>
-          </div>
           <button
             onClick={() => setFiltersOpen(true)}
-            className={`relative ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
               filterCount > 0
                 ? "bg-accent/15 text-accent border border-accent/30"
                 : "bg-bg-card border border-border text-text-secondary hover:text-white hover:border-white/20"
@@ -815,6 +792,8 @@ export default function DiscoverPage({
         current={filters}
         genres={displayGenres}
         providers={displayProviders}
+        mediaType={mediaType}
+        onMediaTypeChange={switchMediaType}
       />
     </Layout>
   );
