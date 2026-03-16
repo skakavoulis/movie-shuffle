@@ -301,6 +301,20 @@ export async function getMovieGenres() {
   );
 }
 
+export interface TMDBWatchProviderRegion {
+  iso_3166_1: string;
+  english_name: string;
+  native_name: string;
+}
+
+export async function getWatchProviderRegions() {
+  return cached("watch_providers:regions", () =>
+    tmdbFetch<{ results: TMDBWatchProviderRegion[] }>(
+      "/watch/providers/regions"
+    ),
+  );
+}
+
 export async function getMovieWatchProviders(region: string) {
   return cached(`providers:movie:${region}`, () =>
     tmdbFetch<{ results: TMDBWatchProvider[] }>("/watch/providers/movie", {

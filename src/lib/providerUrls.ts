@@ -9,11 +9,11 @@ const PROVIDER_SEARCH_URLS: Record<number, (query: string) => string> = {
   8: (q) => `https://www.netflix.com/search?q=${encodeURIComponent(q)}`,
   9: (q) =>
     `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${encodeURIComponent(q)}`,
-  337: (q) => `https://www.disneyplus.com/search?q=${encodeURIComponent(q)}`,
+  // 337: (q) => `https://www.disneyplus.com/search?q=${encodeURIComponent(q)}`,
   15: (q) => `https://www.hulu.com/search?q=${encodeURIComponent(q)}`,
   1899: (q) => `https://www.max.com/search?q=${encodeURIComponent(q)}`,
   386: (q) => `https://www.peacocktv.com/search?q=${encodeURIComponent(q)}`,
-  350: (q) => `https://tv.apple.com/us/search?term=${encodeURIComponent(q)}`,
+  // 350: (q) => `https://tv.apple.com/us/search?term=${encodeURIComponent(q)}`,
   531: (q) =>
     `https://www.paramountplus.com/search/?q=${encodeURIComponent(q)}`,
   283: (q) => `https://www.crunchyroll.com/search?q=${encodeURIComponent(q)}`,
@@ -22,7 +22,7 @@ const PROVIDER_SEARCH_URLS: Record<number, (query: string) => string> = {
   257: (q) => `https://www.fubo.tv/welcome/search?q=${encodeURIComponent(q)}`,
   505: (q) =>
     `https://www.paramountplus.com/search/?q=${encodeURIComponent(q)}`,
-  2: (q) => `https://tv.apple.com/us/search?term=${encodeURIComponent(q)}`,
+  // 2: (q) => `https://tv.apple.com/us/search?term=${encodeURIComponent(q)}`,
   // Rent/Buy
   3: (q) =>
     `https://play.google.com/store/search?q=${encodeURIComponent(q)}&c=movies`,

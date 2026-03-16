@@ -25,7 +25,7 @@ import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import WatchProvidersSection from "@/components/WatchProvidersSection";
-import { pickCulture } from "@/lib/culture";
+import { getRegionFromRequest } from "@/lib/culture";
 
 interface TVPageProps {
   user: User | null;
@@ -64,9 +64,9 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
       };
     }
 
-    const culture = pickCulture(context.req.headers["accept-language"]);
+    const region = getRegionFromRequest(context.req);
     const watchOffer =
-      pickWatchRegion(watchData.results, culture)?.offer ?? null;
+      pickWatchRegion(watchData.results, region)?.offer ?? null;
 
     return { props: { user, show, watchOffer } };
   } catch {

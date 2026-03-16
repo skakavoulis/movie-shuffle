@@ -25,7 +25,8 @@ import DiscoverFiltersModal, {
   activeFilterCount,
   type DiscoverFilters,
 } from "@/components/DiscoverFiltersModal";
-import { pickCulture } from "@/lib/culture";
+import { useRegion } from "@/context/RegionContext";
+import { getRegionFromRequest } from "@/lib/culture";
 
 type DiscoverMediaType = "movie" | "tv";
 type DiscoverItem = TMDBMovie | TMDBTVShow;
@@ -116,6 +117,7 @@ const TV_GENRE_MAP: Record<number, string> = {
 function buildFilterParams(
   mediaType: DiscoverMediaType,
   filters: DiscoverFilters,
+  region: string,
 ): string {
   const params = new URLSearchParams();
   params.set("type", mediaType);
@@ -135,9 +137,7 @@ function buildFilterParams(
   }
   if (filters.providerIds.length > 0) {
     params.set("with_watch_providers", filters.providerIds.join("|"));
-    const languages = navigator?.languages.join(",") ?? "";
-    const culture = pickCulture(languages);
-    params.set("watch_region", culture);
+    params.set("watch_region", region);
   }
   return params.toString();
 }
@@ -154,15 +154,15 @@ export const getServerSideProps: GetServerSideProps<DiscoverProps> = async (
   let providers: TMDBWatchProvider[] = [];
   let tvGenres: TMDBGenre[] = [];
   let tvProviders: TMDBWatchProvider[] = [];
-  const culture = pickCulture(context.req.headers["accept-language"]);
+  const region = getRegionFromRequest(context.req);
 
   try {
     const [movieGenreData, movieProviderData, tvGenreData, tvProviderData] =
       await Promise.all([
         getMovieGenres(),
-        getMovieWatchProviders(culture),
+        getMovieWatchProviders(region),
         getTVGenres(),
-        getTVWatchProviders(culture),
+        getTVWatchProviders(region),
       ]);
     genres = movieGenreData.genres;
     providers = movieProviderData.results
@@ -209,13 +209,20 @@ export default function DiscoverPage({
   mediaTypeRef.current = mediaType;
 
   const { isLiked, toggleLike } = useLikes();
+  const { region } = useRegion();
+  const regionRef = useRef(region);
+  regionRef.current = region;
 
   const fetchBatch = useCallback(async () => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     setNoResults(false);
     try {
-      const qs = buildFilterParams(mediaTypeRef.current, filtersRef.current);
+      const qs = buildFilterParams(
+        mediaTypeRef.current,
+        filtersRef.current,
+        regionRef.current,
+      );
       const url = `/api/discover?${qs}`;
       const res = await fetch(url);
       if (!res.ok) return;
