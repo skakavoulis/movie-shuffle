@@ -14,6 +14,7 @@ import {
 import Layout from "@/components/Layout";
 import HeroBanner from "@/components/HeroBanner";
 import CarouselSection from "@/components/CarouselSection";
+import DiscoverCTASection from "@/components/DiscoverCTASection";
 
 interface HomeProps {
   user: User | null;
@@ -121,12 +122,14 @@ export default function Home({
         <>
           {hero && <HeroBanner item={hero} />}
           <div className="-mt-16 relative z-10">
-            {sections.map((section) => (
-              <CarouselSection
-                key={section.title}
-                title={section.title}
-                items={section.items}
-              />
+            {sections.map((section, index) => (
+              <div key={section.title}>
+                <CarouselSection
+                  title={section.title}
+                  items={section.items}
+                />
+                {index === 0 && <DiscoverCTASection />}
+              </div>
             ))}
           </div>
         </>

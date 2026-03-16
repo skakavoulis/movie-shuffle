@@ -609,7 +609,7 @@ export default function DiscoverPage({
         ) : (
           <>
             {/* Card stack */}
-            <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
+            <div className="flex-1 flex items-center justify-center min-h-0">
               <div className="relative w-[78vw] max-w-[640px] aspect-[2/3] max-h-full select-none">
                 {queue.slice(0, 3).map((item, index) => {
                   const isTop = index === 0;

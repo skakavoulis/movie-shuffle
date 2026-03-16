@@ -354,7 +354,7 @@ export default function Layout({ children, user }: LayoutProps) {
         <footer className="px-6 md:px-12 py-8 border-t border-border mt-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-text-muted">
             <p>
-              &copy; {new Date().getFullYear()} JustPickAMovie. Powered by TMDB.
+              &copy; 2021-{new Date().getFullYear()} JustPickAMovie. Powered by TMDB.
             </p>
             <p>
               This product uses the TMDB API but is not endorsed or certified by
