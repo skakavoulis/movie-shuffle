@@ -102,7 +102,7 @@ export default function CastPage({
   return (
     <Layout user={user}>
       <Head>
-        <title>{person.name} — MovieShuffle</title>
+        <title>{person.name} — JustPickAMovie</title>
         <meta
           name="description"
           content={

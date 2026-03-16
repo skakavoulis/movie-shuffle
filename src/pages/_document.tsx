@@ -7,9 +7,9 @@ export default function Document() {
         <meta charSet="utf-8" />
         <meta
           name="description"
-          content="MovieShuffle — Discover random movies with a beautiful streaming-style interface. Powered by TMDB."
+          content="JustPickAMovie — Discover random movies with a beautiful streaming-style interface. Powered by TMDB."
         />
-        <meta property="og:title" content="MovieShuffle" />
+        <meta property="og:title" content="JustPickAMovie" />
         <meta
           property="og:description"
           content="Discover random movies with a streaming-style interface."

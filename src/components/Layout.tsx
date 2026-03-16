@@ -69,7 +69,7 @@ export default function Layout({ children, user }: LayoutProps) {
                 href="/"
                 className="text-2xl font-extrabold tracking-tight text-accent hover:text-accent-hover transition-colors"
               >
-                MovieShuffle
+                JustPickAMovie
               </Link>
               <div className="hidden md:flex items-center gap-6">
                 {navLinks.map((link) => (
@@ -354,7 +354,7 @@ export default function Layout({ children, user }: LayoutProps) {
         <footer className="px-6 md:px-12 py-8 border-t border-border mt-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-text-muted">
             <p>
-              &copy; {new Date().getFullYear()} MovieShuffle. Powered by TMDB.
+              &copy; {new Date().getFullYear()} JustPickAMovie. Powered by TMDB.
             </p>
             <p>
               This product uses the TMDB API but is not endorsed or certified by

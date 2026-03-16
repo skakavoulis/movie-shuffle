@@ -43,7 +43,7 @@ export default function MyMovies({
   return (
     <Layout user={user}>
       <Head>
-        <title>My Movies — MovieShuffle</title>
+        <title>My Movies — JustPickAMovie</title>
       </Head>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 pt-24 pb-16">

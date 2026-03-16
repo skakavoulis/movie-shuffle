@@ -43,7 +43,7 @@ export default function MyTVShows({
   return (
     <Layout user={user}>
       <Head>
-        <title>My TV Shows — MovieShuffle</title>
+        <title>My TV Shows — JustPickAMovie</title>
       </Head>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 pt-24 pb-16">

@@ -76,7 +76,7 @@ export default function TVShows({
   return (
     <Layout user={user}>
       <Head>
-        <title>TV Shows — MovieShuffle</title>
+        <title>TV Shows — JustPickAMovie</title>
       </Head>
 
       {error ? (

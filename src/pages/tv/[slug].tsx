@@ -123,7 +123,7 @@ export default function TVShowPage({
   return (
     <Layout user={user}>
       <Head>
-        <title>{show.name} — MovieShuffle</title>
+        <title>{show.name} — JustPickAMovie</title>
         <meta name="description" content={show.overview} />
         <meta property="og:title" content={show.name} />
         <meta property="og:description" content={show.overview} />

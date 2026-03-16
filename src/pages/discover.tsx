@@ -489,7 +489,7 @@ export default function DiscoverPage({
   return (
     <Layout user={user}>
       <Head>
-        <title>Discover — MovieShuffle</title>
+        <title>Discover — JustPickAMovie</title>
       </Head>
 
       <div className="flex flex-col items-center h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">

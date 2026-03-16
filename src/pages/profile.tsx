@@ -94,7 +94,7 @@ export default function ProfilePage({
   return (
     <Layout user={user}>
       <Head>
-        <title>Profile — MovieShuffle</title>
+        <title>Profile — JustPickAMovie</title>
       </Head>
 
       <div className="flex items-start justify-center min-h-screen px-6 pt-28 pb-12">

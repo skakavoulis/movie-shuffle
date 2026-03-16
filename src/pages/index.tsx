@@ -89,7 +89,7 @@ export default function Home({
   return (
     <Layout user={user}>
       <Head>
-        <title>MovieShuffle — Discover Random Movies</title>
+        <title>JustPickAMovie — Discover Random Movies</title>
       </Head>
 
       {error ? (

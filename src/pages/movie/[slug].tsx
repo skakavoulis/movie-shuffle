@@ -127,7 +127,7 @@ export default function MoviePage({
   return (
     <Layout user={user}>
       <Head>
-        <title>{movie.title} — MovieShuffle</title>
+        <title>{movie.title} — JustPickAMovie</title>
         <meta name="description" content={movie.overview} />
         <meta property="og:title" content={movie.title} />
         <meta property="og:description" content={movie.overview} />

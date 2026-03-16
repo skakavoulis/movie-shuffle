@@ -1,4 +1,4 @@
-# MovieShuffle
+# JustPickAMovie
 
 A streaming-style web app that surfaces random movies via the TMDB API, with Supabase authentication and user profiles. Built with Next.js (Pages Router), TypeScript, and Tailwind CSS.
 
