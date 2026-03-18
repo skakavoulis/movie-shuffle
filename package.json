@@ -3,7 +3,9 @@
   "version": "0.9.0",
   "private": true,
   "scripts": {
+    "predev": "supabase db push",
     "dev": "next dev",
+    "prestart": "supabase db push",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
