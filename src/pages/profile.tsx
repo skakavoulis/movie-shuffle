@@ -34,7 +34,7 @@ export const getServerSideProps = withAuth<ProfilePageProps>(
       .single();
 
     if (!profile) {
-      const { data: newProfile } = await supabase
+      const { data: newProfile, error } = await supabase
         .from("profiles")
         .insert({
           id: userId,
@@ -44,6 +44,7 @@ export const getServerSideProps = withAuth<ProfilePageProps>(
         .select()
         .single();
       profile = newProfile;
+      console.log(error);
     }
 
     return {

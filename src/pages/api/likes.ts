@@ -13,7 +13,7 @@ export interface LikeRow {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const supabase = createServerSupabaseClient({ req, res });
   const {
@@ -45,10 +45,14 @@ export default async function handler(
     const { media_id, media_type, title, poster_path } = req.body;
 
     if (!media_id || !media_type || !title) {
-      return res.status(400).json({ error: "media_id, media_type, and title are required" });
+      return res
+        .status(400)
+        .json({ error: "media_id, media_type, and title are required" });
     }
     if (media_type !== "movie" && media_type !== "tv") {
-      return res.status(400).json({ error: "media_type must be 'movie' or 'tv'" });
+      return res
+        .status(400)
+        .json({ error: "media_type must be 'movie' or 'tv'" });
     }
 
     const { data, error } = await supabase
@@ -61,7 +65,7 @@ export default async function handler(
           title,
           poster_path: poster_path ?? null,
         },
-        { onConflict: "user_id,media_id,media_type" }
+        { onConflict: "user_id,media_id,media_type" },
       )
       .select()
       .single();
@@ -75,7 +79,9 @@ export default async function handler(
     const media_type = req.query.media_type as string;
 
     if (!media_id || !media_type) {
-      return res.status(400).json({ error: "media_id and media_type are required" });
+      return res
+        .status(400)
+        .json({ error: "media_id and media_type are required" });
     }
 
     const { error } = await supabase
