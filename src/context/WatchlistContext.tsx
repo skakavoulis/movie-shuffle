@@ -6,8 +6,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { User } from "@supabase/supabase-js";
 import type { WatchlistRow, WatchlistStatus } from "@/pages/api/watchlist";
+import { useAuth } from "@/context/AuthContext";
 
 interface WatchlistContextValue {
   watchlistMap: Map<string, WatchlistStatus>;
@@ -41,13 +41,8 @@ function watchlistKey(mediaType: string, mediaId: number) {
   return `${mediaType}:${mediaId}`;
 }
 
-export function WatchlistProvider({
-  user,
-  children,
-}: {
-  user: User | null;
-  children: ReactNode;
-}) {
+export function WatchlistProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [watchlistMap, setWatchlistMap] = useState<Map<string, WatchlistStatus>>(
     new Map()
   );

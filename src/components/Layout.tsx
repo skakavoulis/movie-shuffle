@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { createClient } from "@/lib/supabaseClient";
-import type { User } from "@supabase/supabase-js";
 import { useState, useRef, useEffect } from "react";
 import SearchBar from "./SearchBar";
 import RegionDropdown from "./RegionDropdown";
 import { useRegion } from "@/context/RegionContext";
+import { useAuth } from "@/context/AuthContext";
 
 interface LayoutProps {
   children: React.ReactNode;
-  user: User | null;
 }
 
-export default function Layout({ children, user }: LayoutProps) {
+export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const { region, setRegion, regions, loading } = useRegion();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -158,6 +158,13 @@ export default function Layout({ children, user }: LayoutProps) {
                         </button>
                       </div>
                     )}
+                  </div>
+                ) : authLoading ? (
+                  <div className="flex w-full justify-center items-center py-2.5">
+                    <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent"></span>
+                    <span className="ml-2 text-sm text-text-muted">
+                      Loading...
+                    </span>
                   </div>
                 ) : (
                   <Link
@@ -440,6 +447,13 @@ export default function Layout({ children, user }: LayoutProps) {
                     >
                       Sign Out
                     </button>
+                  </div>
+                ) : authLoading ? (
+                  <div className="flex w-full justify-center items-center py-2.5">
+                    <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent"></span>
+                    <span className="ml-2 text-sm text-text-muted">
+                      Loading...
+                    </span>
                   </div>
                 ) : (
                   <Link

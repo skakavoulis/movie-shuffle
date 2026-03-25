@@ -66,7 +66,7 @@ export default function AuthPage() {
   };
 
   return (
-    <Layout user={null}>
+    <Layout>
       <Head>
         <title>Sign In — JustPickAMovie</title>
       </Head>

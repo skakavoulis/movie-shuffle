@@ -3,7 +3,6 @@ import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
 export interface LikeRow {
   id: string;
-  user_id: string;
   media_id: number;
   media_type: "movie" | "tv";
   title: string;
@@ -28,7 +27,7 @@ export default async function handler(
     const mediaType = req.query.media_type as string | undefined;
     let query = supabase
       .from("likes")
-      .select("*")
+      .select("id, media_id, media_type, title, poster_path")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 

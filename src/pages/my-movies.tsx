@@ -2,33 +2,17 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
 import { withAuth } from "@/components/AuthGuard";
 import Layout from "@/components/Layout";
 import LikeButton from "@/components/LikeButton";
 import { posterUrl, movieHref } from "@/lib/tmdb";
 import type { LikeRow } from "@/pages/api/likes";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
-type MyMoviesProps = {
-  user: User | null;
-  [key: string]: unknown;
-};
+export const getServerSideProps = withAuth(async () => ({
+  props: {},
+}));
 
-export const getServerSideProps: GetServerSideProps<MyMoviesProps> = withAuth(
-  async (context, userId) => {
-    const supabase = createServerSupabaseClient(context);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return { props: { user } };
-  },
-);
-
-export default function MyMovies({
-  user,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function MyMovies() {
   const [likes, setLikes] = useState<LikeRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +25,7 @@ export default function MyMovies({
   }, []);
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>My Movies — JustPickAMovie</title>
       </Head>

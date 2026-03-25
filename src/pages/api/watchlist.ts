@@ -32,7 +32,7 @@ export default async function handler(
     const status = req.query.status as string | undefined;
     let query = supabase
       .from("watchlist")
-      .select("*")
+      .select("id, media_id, media_type, status, title, poster_path")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 

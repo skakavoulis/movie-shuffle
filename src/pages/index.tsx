@@ -1,7 +1,5 @@
 import Head from "next/head";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import type { GetStaticProps, InferGetStaticPropsType } from "next";
 import {
   getPopularMovies,
   getTopRatedMovies,
@@ -17,20 +15,12 @@ import CarouselSection from "@/components/CarouselSection";
 import DiscoverCTASection from "@/components/DiscoverCTASection";
 
 interface HomeProps {
-  user: User | null;
   hero: MediaItem | null;
   sections: { title: string; items: MediaItem[] }[];
   error: string | null;
 }
 
-export const getServerSideProps: GetServerSideProps<HomeProps> = async (
-  context,
-) => {
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   try {
     const [popular, topRated, nowPlaying, trending] = await Promise.all([
       getPopularMovies(),
@@ -67,28 +57,28 @@ export const getServerSideProps: GetServerSideProps<HomeProps> = async (
 
     return {
       props: {
-        user,
         hero: heroMovie ? movieToMediaItem(heroMovie) : null,
         sections,
         error: null,
       },
+      revalidate: 300,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to fetch movies";
     return {
-      props: { user, hero: null, sections: [], error: message },
+      props: { hero: null, sections: [], error: message },
+      revalidate: 60,
     };
   }
 };
 
 export default function Home({
-  user,
   hero,
   sections,
   error,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>JustPickAMovie — Discover Random Movies</title>
       </Head>

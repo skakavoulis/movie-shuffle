@@ -93,7 +93,7 @@ export default function ProfilePage({
       : (user.app_metadata?.provider ?? "Email");
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>Profile — JustPickAMovie</title>
       </Head>

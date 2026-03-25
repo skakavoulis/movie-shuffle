@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import type {
+  GetStaticPaths,
+  GetStaticProps,
+  InferGetStaticPropsType,
+} from "next";
 import {
   getTVShowDetails,
-  getTVShowWatchProvidersById,
   parseTVIdFromSlug,
   tvSlug,
   posterUrl,
@@ -14,9 +15,7 @@ import {
   profileUrl,
   tvShowToMediaItem,
   personHref,
-  pickWatchRegion,
   type TMDBTVShowDetails,
-  type TMDBWatchProviderOffer,
 } from "@/lib/tmdb";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -24,35 +23,29 @@ import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
-import WatchProvidersSection from "@/components/WatchProvidersSection";
-import { getRegionFromRequest } from "@/lib/culture";
+import TitleWatchProviders from "@/components/TitleWatchProviders";
 
 interface TVPageProps {
-  user: User | null;
   show: TMDBTVShowDetails;
-  watchOffer: TMDBWatchProviderOffer | null;
 }
 
-export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
-  context,
-) => {
-  const slug = context.params?.slug as string;
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps<TVPageProps> = async ({
+  params,
+}) => {
+  const slug = params?.slug as string;
   const showId = parseTVIdFromSlug(slug);
 
   if (!showId) {
     return { notFound: true };
   }
 
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   try {
-    const [show, watchData] = await Promise.all([
-      getTVShowDetails(showId),
-      getTVShowWatchProvidersById(showId).catch(() => ({ results: {} })),
-    ]);
+    const show = await getTVShowDetails(showId);
 
     const canonicalSlug = tvSlug(show);
     if (slug !== canonicalSlug) {
@@ -64,21 +57,15 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async (
       };
     }
 
-    const region = getRegionFromRequest(context.req);
-    const watchOffer =
-      pickWatchRegion(watchData.results, region)?.offer ?? null;
-
-    return { props: { user, show, watchOffer } };
+    return { props: { show }, revalidate: 86_400 };
   } catch {
     return { notFound: true };
   }
 };
 
 export default function TVShowPage({
-  user,
   show,
-  watchOffer,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
   const rating = show.vote_average?.toFixed(1);
@@ -121,7 +108,7 @@ export default function TVShowPage({
       : null;
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>{show.name} — JustPickAMovie</title>
         <meta name="description" content={show.overview} />
@@ -317,8 +304,9 @@ export default function TVShowPage({
         </div>
 
         {/* Where to watch */}
-        <WatchProvidersSection
-          offer={watchOffer}
+        <TitleWatchProviders
+          mediaType="tv"
+          mediaId={show.id}
           title={show.name}
         />
 

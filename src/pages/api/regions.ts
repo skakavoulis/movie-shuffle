@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getWatchProviderRegions } from "@/lib/tmdb";
+import { CDN_LONG } from "@/lib/cdnCache";
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,7 +13,7 @@ export default async function handler(
 
   try {
     const data = await getWatchProviderRegions();
-    res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate");
+    res.setHeader("Cache-Control", CDN_LONG);
     return res.status(200).json(data.results ?? []);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to fetch regions";

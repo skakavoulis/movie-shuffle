@@ -2,45 +2,51 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import {
   posterUrl,
   movieHref,
   tvHref,
-  getMovieGenres,
-  getMovieWatchProviders,
-  getTVGenres,
-  getTVWatchProviders,
   type TMDBMovie,
   type TMDBTVShow,
   type TMDBGenre,
   type TMDBWatchProvider,
 } from "@/lib/tmdb";
 import { useLikes } from "@/context/LikesContext";
+import { useAuth } from "@/context/AuthContext";
 import DiscoverFiltersModal, {
   DEFAULT_FILTERS,
   activeFilterCount,
   type DiscoverFilters,
 } from "@/components/DiscoverFiltersModal";
 import { useRegion } from "@/context/RegionContext";
-import { getRegionFromRequest } from "@/lib/culture";
 
 type DiscoverMediaType = "movie" | "tv";
-type DiscoverItem = TMDBMovie | TMDBTVShow;
+type DiscoverSlimMovie = Pick<
+  TMDBMovie,
+  | "id"
+  | "title"
+  | "overview"
+  | "poster_path"
+  | "release_date"
+  | "vote_average"
+  | "genre_ids"
+>;
+type DiscoverSlimTV = Pick<
+  TMDBTVShow,
+  | "id"
+  | "name"
+  | "overview"
+  | "poster_path"
+  | "first_air_date"
+  | "vote_average"
+  | "genre_ids"
+>;
+type DiscoverItem = DiscoverSlimMovie | DiscoverSlimTV;
 
-function isMovie(item: DiscoverItem): item is TMDBMovie {
+function isMovie(item: DiscoverItem): item is DiscoverSlimMovie {
   return "title" in item && "release_date" in item;
-}
-
-interface DiscoverProps {
-  user: User | null;
-  genres: TMDBGenre[];
-  providers: TMDBWatchProvider[];
-  tvGenres: TMDBGenre[];
-  tvProviders: TMDBWatchProvider[];
 }
 
 const STORAGE_KEY_FILTERS = "discover-filters";
@@ -142,50 +148,20 @@ function buildFilterParams(
   return params.toString();
 }
 
-export const getServerSideProps: GetServerSideProps<DiscoverProps> = async (
-  context,
-) => {
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const getStaticProps: GetStaticProps = async () => ({
+  props: {},
+  revalidate: 3600,
+});
 
-  let genres: TMDBGenre[] = [];
-  let providers: TMDBWatchProvider[] = [];
-  let tvGenres: TMDBGenre[] = [];
-  let tvProviders: TMDBWatchProvider[] = [];
-  const region = getRegionFromRequest(context.req);
+export default function DiscoverPage() {
+  const { user } = useAuth();
+  const { region, loading: regionLoading } = useRegion();
+  const [genres, setGenres] = useState<TMDBGenre[]>([]);
+  const [providers, setProviders] = useState<TMDBWatchProvider[]>([]);
+  const [tvGenres, setTvGenres] = useState<TMDBGenre[]>([]);
+  const [tvProviders, setTvProviders] = useState<TMDBWatchProvider[]>([]);
+  const [filtersMetaLoading, setFiltersMetaLoading] = useState(true);
 
-  try {
-    const [movieGenreData, movieProviderData, tvGenreData, tvProviderData] =
-      await Promise.all([
-        getMovieGenres(),
-        getMovieWatchProviders(region),
-        getTVGenres(),
-        getTVWatchProviders(region),
-      ]);
-    genres = movieGenreData.genres;
-    providers = movieProviderData.results
-      .sort((a, b) => a.display_priority - b.display_priority)
-      .slice(0, 30);
-    tvGenres = tvGenreData.genres;
-    tvProviders = tvProviderData.results
-      .sort((a, b) => a.display_priority - b.display_priority)
-      .slice(0, 30);
-  } catch {
-    // page still works without filter data
-  }
-
-  return { props: { user, genres, providers, tvGenres, tvProviders } };
-};
-
-export default function DiscoverPage({
-  user,
-  genres,
-  providers,
-  tvGenres,
-  tvProviders,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const [mediaType, setMediaType] = useState<DiscoverMediaType>("movie");
   const [queue, setQueue] = useState<DiscoverItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,9 +185,30 @@ export default function DiscoverPage({
   mediaTypeRef.current = mediaType;
 
   const { isLiked, toggleLike } = useLikes();
-  const { region } = useRegion();
   const regionRef = useRef(region);
   regionRef.current = region;
+
+  useEffect(() => {
+    if (regionLoading) return;
+    let cancelled = false;
+    setFiltersMetaLoading(true);
+    fetch(`/api/discover-meta?region=${encodeURIComponent(region)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setGenres(data.genres ?? []);
+        setProviders(data.providers ?? []);
+        setTvGenres(data.tvGenres ?? []);
+        setTvProviders(data.tvProviders ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setFiltersMetaLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [region, regionLoading]);
 
   const fetchBatch = useCallback(async () => {
     if (fetchingRef.current) return;
@@ -470,7 +467,7 @@ export default function DiscoverPage({
   const displayProviders = mediaType === "movie" ? providers : tvProviders;
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>Discover — JustPickAMovie</title>
       </Head>
@@ -794,6 +791,7 @@ export default function DiscoverPage({
         providers={displayProviders}
         mediaType={mediaType}
         onMediaTypeChange={switchMediaType}
+        filtersLoading={filtersMetaLoading}
       />
     </Layout>
   );

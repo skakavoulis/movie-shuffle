@@ -1,7 +1,5 @@
 import Head from "next/head";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import type { GetStaticProps, InferGetStaticPropsType } from "next";
 import {
   getPopularTVShows,
   getTopRatedTVShows,
@@ -16,18 +14,12 @@ import HeroBanner from "@/components/HeroBanner";
 import CarouselSection from "@/components/CarouselSection";
 
 interface TVShowsProps {
-  user: User | null;
   hero: MediaItem | null;
   sections: { title: string; items: MediaItem[] }[];
   error: string | null;
 }
 
-export const getServerSideProps: GetServerSideProps<TVShowsProps> = async (context) => {
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export const getStaticProps: GetStaticProps<TVShowsProps> = async () => {
   try {
     const [popular, topRated, onTheAir, trending] = await Promise.all([
       getPopularTVShows(),
@@ -53,28 +45,28 @@ export const getServerSideProps: GetServerSideProps<TVShowsProps> = async (conte
 
     return {
       props: {
-        user,
         hero: heroShow ? tvShowToMediaItem(heroShow) : null,
         sections,
         error: null,
       },
+      revalidate: 300,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to fetch TV shows";
     return {
-      props: { user, hero: null, sections: [], error: message },
+      props: { hero: null, sections: [], error: message },
+      revalidate: 60,
     };
   }
 };
 
 export default function TVShows({
-  user,
   hero,
   sections,
   error,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>TV Shows — JustPickAMovie</title>
       </Head>

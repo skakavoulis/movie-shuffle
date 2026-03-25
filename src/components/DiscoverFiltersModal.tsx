@@ -39,6 +39,8 @@ interface DiscoverFiltersModalProps {
   providers: TMDBWatchProvider[];
   mediaType: MediaType;
   onMediaTypeChange: (type: MediaType) => void;
+  /** When true, shows overlay until genre/provider lists are ready */
+  filtersLoading?: boolean;
 }
 
 export default function DiscoverFiltersModal({
@@ -50,6 +52,7 @@ export default function DiscoverFiltersModal({
   providers,
   mediaType,
   onMediaTypeChange,
+  filtersLoading = false,
 }: DiscoverFiltersModalProps) {
   const [draft, setDraft] = useState<DiscoverFilters>(current);
 
@@ -104,6 +107,11 @@ export default function DiscoverFiltersModal({
         onClick={onClose}
       />
       <div className="relative w-full max-w-lg max-h-[85vh] bg-bg-card border border-border rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in">
+        {filtersLoading && (
+          <div className="absolute inset-0 z-[70] flex items-center justify-center rounded-t-2xl md:rounded-2xl bg-bg-card/95">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-lg font-bold text-text-primary">Filters</h2>

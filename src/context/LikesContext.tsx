@@ -6,8 +6,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { User } from "@supabase/supabase-js";
 import type { LikeRow } from "@/pages/api/likes";
+import { useAuth } from "@/context/AuthContext";
 
 interface LikesContextValue {
   likedIds: Set<string>;
@@ -32,13 +32,8 @@ function likeKey(mediaType: string, mediaId: number) {
   return `${mediaType}:${mediaId}`;
 }
 
-export function LikesProvider({
-  user,
-  children,
-}: {
-  user: User | null;
-  children: ReactNode;
-}) {
+export function LikesProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 

@@ -1,5 +1,40 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { discoverMovies, discoverTVShows } from "@/lib/tmdb";
+import {
+  discoverMovies,
+  discoverTVShows,
+  type TMDBMovie,
+  type TMDBTVShow,
+} from "@/lib/tmdb";
+
+function slimDiscoverResults(
+  results: (TMDBMovie | TMDBTVShow)[],
+  isTV: boolean,
+) {
+  return results.map((m) => {
+    if (isTV) {
+      const s = m as TMDBTVShow;
+      return {
+        id: s.id,
+        name: s.name,
+        overview: s.overview,
+        poster_path: s.poster_path,
+        first_air_date: s.first_air_date,
+        vote_average: s.vote_average,
+        genre_ids: s.genre_ids,
+      };
+    }
+    const mv = m as TMDBMovie;
+    return {
+      id: mv.id,
+      title: mv.title,
+      overview: mv.overview,
+      poster_path: mv.poster_path,
+      release_date: mv.release_date,
+      vote_average: mv.vote_average,
+      genre_ids: mv.genre_ids,
+    };
+  });
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -67,7 +102,7 @@ export default async function handler(
     }
 
     res.setHeader("Cache-Control", "no-store");
-    return res.status(200).json(filtered);
+    return res.status(200).json(slimDiscoverResults(filtered, isTV));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to fetch";
     return res.status(500).json({ error: msg });

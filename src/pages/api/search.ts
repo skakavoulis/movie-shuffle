@@ -1,5 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { searchMulti, searchResultToMediaItem } from "@/lib/tmdb";
+import {
+  searchMulti,
+  searchResultToMediaItem,
+  compactMediaItemForGrid,
+} from "@/lib/tmdb";
+import { CDN_MEDIUM } from "@/lib/cdnCache";
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,8 +24,10 @@ export default async function handler(
     const data = await searchMulti(q);
     const items = data.results
       .map(searchResultToMediaItem)
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .map(compactMediaItemForGrid);
 
+    res.setHeader("Cache-Control", CDN_MEDIUM);
     return res.status(200).json(items);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Search failed";

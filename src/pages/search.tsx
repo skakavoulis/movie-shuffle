@@ -2,18 +2,17 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import {
   searchMulti,
   searchResultToMediaItem,
+  compactMediaItemForGrid,
   posterUrl,
   type MediaItem,
 } from "@/lib/tmdb";
 import Layout from "@/components/Layout";
+import { CDN_SEARCH_HTML } from "@/lib/cdnCache";
 
 interface SearchPageProps {
-  user: User | null;
   query: string;
   results: MediaItem[];
   totalResults: number;
@@ -22,44 +21,40 @@ interface SearchPageProps {
 export const getServerSideProps: GetServerSideProps<SearchPageProps> = async (
   context,
 ) => {
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  context.res.setHeader("Cache-Control", CDN_SEARCH_HTML);
 
   const query = ((context.query.q as string) ?? "").trim();
 
   if (!query) {
-    return { props: { user, query: "", results: [], totalResults: 0 } };
+    return { props: { query: "", results: [], totalResults: 0 } };
   }
 
   try {
     const data = await searchMulti(query);
     const results = data.results
       .map(searchResultToMediaItem)
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .map(compactMediaItemForGrid);
 
     return {
       props: {
-        user,
         query,
         results,
         totalResults: data.total_results,
       },
     };
   } catch {
-    return { props: { user, query, results: [], totalResults: 0 } };
+    return { props: { query, results: [], totalResults: 0 } };
   }
 };
 
 export default function SearchPage({
-  user,
   query,
   results,
   totalResults,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>
           {query

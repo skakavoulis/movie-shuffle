@@ -2,28 +2,15 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
 import { withAuth } from "@/components/AuthGuard";
 import Layout from "@/components/Layout";
 import WatchlistButton from "@/components/WatchlistButton";
 import { posterUrl, movieHref, tvHref } from "@/lib/tmdb";
 import type { WatchlistRow, WatchlistStatus } from "@/pages/api/watchlist";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
-type WatchlistPageProps = {
-  user: User | null;
-  [key: string]: unknown;
-};
-
-export const getServerSideProps: GetServerSideProps<WatchlistPageProps> =
-  withAuth(async (context, _userId) => {
-    const supabase = createServerSupabaseClient(context);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return { props: { user } };
-  });
+export const getServerSideProps = withAuth(async () => ({
+  props: {},
+}));
 
 const tabs: { key: WatchlistStatus; label: string }[] = [
   { key: "want_to_watch", label: "Want to Watch" },
@@ -37,9 +24,7 @@ function itemHref(item: WatchlistRow) {
   return tvHref({ id: item.media_id, name: item.title });
 }
 
-export default function WatchlistPage({
-  user,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<WatchlistStatus>("want_to_watch");
@@ -55,7 +40,7 @@ export default function WatchlistPage({
   const filteredItems = items.filter((i) => i.status === activeTab);
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>Watchlist — JustPickAMovie</title>
       </Head>

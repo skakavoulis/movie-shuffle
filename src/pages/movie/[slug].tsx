@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import type {
+  GetStaticPaths,
+  GetStaticProps,
+  InferGetStaticPropsType,
+} from "next";
 import {
   getMovieDetails,
-  getMovieWatchProvidersById,
   parseMovieIdFromSlug,
   movieSlug,
   posterUrl,
@@ -14,9 +15,7 @@ import {
   profileUrl,
   movieToMediaItem,
   personHref,
-  pickWatchRegion,
   type TMDBMovieDetails,
-  type TMDBWatchProviderOffer,
 } from "@/lib/tmdb";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -24,35 +23,29 @@ import CarouselSection from "@/components/CarouselSection";
 import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
-import WatchProvidersSection from "@/components/WatchProvidersSection";
-import { getRegionFromRequest } from "@/lib/culture";
+import TitleWatchProviders from "@/components/TitleWatchProviders";
 
 interface MoviePageProps {
-  user: User | null;
   movie: TMDBMovieDetails;
-  watchOffer: TMDBWatchProviderOffer | null;
 }
 
-export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
-  context,
-) => {
-  const slug = context.params?.slug as string;
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
+  params,
+}) => {
+  const slug = params?.slug as string;
   const movieId = parseMovieIdFromSlug(slug);
 
   if (!movieId) {
     return { notFound: true };
   }
 
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   try {
-    const [movie, watchData] = await Promise.all([
-      getMovieDetails(movieId),
-      getMovieWatchProvidersById(movieId).catch(() => ({ results: {} })),
-    ]);
+    const movie = await getMovieDetails(movieId);
 
     const canonicalSlug = movieSlug(movie);
     if (slug !== canonicalSlug) {
@@ -64,11 +57,7 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async (
       };
     }
 
-    const region = getRegionFromRequest(context.req);
-    const watchOffer =
-      pickWatchRegion(watchData.results, region)?.offer ?? null;
-
-    return { props: { user, movie, watchOffer } };
+    return { props: { movie }, revalidate: 86_400 };
   } catch {
     return { notFound: true };
   }
@@ -87,10 +76,8 @@ function formatCurrency(amount: number) {
 }
 
 export default function MoviePage({
-  user,
   movie,
-  watchOffer,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
   const rating = movie.vote_average?.toFixed(1);
@@ -125,7 +112,7 @@ export default function MoviePage({
   }, [trailerOpen]);
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>{movie.title} — JustPickAMovie</title>
         <meta name="description" content={movie.overview} />
@@ -311,8 +298,9 @@ export default function MoviePage({
         </div>
 
         {/* Where to watch */}
-        <WatchProvidersSection
-          offer={watchOffer}
+        <TitleWatchProviders
+          mediaType="movie"
+          mediaId={movie.id}
           title={movie.title}
         />
 

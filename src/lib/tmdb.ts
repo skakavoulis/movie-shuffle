@@ -546,11 +546,23 @@ interface TMDBMultiSearchResponse {
 }
 
 export async function searchMulti(query: string, page = 1) {
-  return tmdbFetch<TMDBMultiSearchResponse>("/search/multi", {
-    query,
-    page: String(page),
-    include_adult: "false",
-  });
+  const q = query.trim();
+  return cached(`search:multi:${q.toLowerCase()}:${page}`, () =>
+    tmdbFetch<TMDBMultiSearchResponse>("/search/multi", {
+      query: q,
+      page: String(page),
+      include_adult: "false",
+    }),
+  );
+}
+
+/** Smaller JSON for grid UIs (search cards do not use overview/backdrop). */
+export function compactMediaItemForGrid(item: MediaItem): MediaItem {
+  return {
+    ...item,
+    overview: "",
+    backdrop_path: null,
+  };
 }
 
 export function searchResultToMediaItem(

@@ -1,9 +1,11 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import type { User } from "@supabase/supabase-js";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import type {
+  GetStaticPaths,
+  GetStaticProps,
+  InferGetStaticPropsType,
+} from "next";
 import {
   getPersonDetails,
   parsePersonIdFromSlug,
@@ -17,24 +19,23 @@ import {
 import Layout from "@/components/Layout";
 
 interface CastPageProps {
-  user: User | null;
   person: TMDBPersonDetails;
 }
 
-export const getServerSideProps: GetServerSideProps<CastPageProps> = async (
-  context,
-) => {
-  const slug = context.params?.slug as string;
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps<CastPageProps> = async ({
+  params,
+}) => {
+  const slug = params?.slug as string;
   const personId = parsePersonIdFromSlug(slug);
 
   if (!personId) {
     return { notFound: true };
   }
-
-  const supabase = createServerSupabaseClient(context);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   try {
     const person = await getPersonDetails(personId);
@@ -49,7 +50,7 @@ export const getServerSideProps: GetServerSideProps<CastPageProps> = async (
       };
     }
 
-    return { props: { user, person } };
+    return { props: { person }, revalidate: 86_400 };
   } catch {
     return { notFound: true };
   }
@@ -73,9 +74,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function CastPage({
-  user,
   person,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const credits = person.combined_credits?.cast ?? [];
 
   const sortedCredits = [...credits]
@@ -100,7 +100,7 @@ export default function CastPage({
     .slice(0, 20);
 
   return (
-    <Layout user={user}>
+    <Layout>
       <Head>
         <title>{person.name} — JustPickAMovie</title>
         <meta

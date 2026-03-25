@@ -17,7 +17,7 @@ export default async function handler(
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, display_name, avatar_url, created_at")
       .eq("id", user.id)
       .single();
 
