@@ -567,7 +567,7 @@ export default function DiscoverPage() {
           <>
             {/* Card stack */}
             <div className="flex-1 flex items-center justify-center min-h-0">
-              <div className="relative w-[78vw] max-w-[640px] aspect-[2/3] max-h-full select-none">
+              <div className="relative h-full w-auto aspect-[2/3] max-h-[min(100%,104vw,853px)] select-none">
                 {queue.slice(0, 3).map((item, index) => {
                   const isTop = index === 0;
                   const genreMap =
