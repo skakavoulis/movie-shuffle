@@ -13,6 +13,7 @@ import Layout from "@/components/Layout";
 import HeroBanner from "@/components/HeroBanner";
 import CarouselSection from "@/components/CarouselSection";
 import DiscoverCTASection from "@/components/DiscoverCTASection";
+import NewsHeadlinesSection from "@/components/NewsHeadlinesSection";
 
 interface HomeProps {
   hero: MediaItem | null;
@@ -114,11 +115,9 @@ export default function Home({
           <div className="-mt-16 relative z-10">
             {sections.map((section, index) => (
               <div key={section.title}>
-                <CarouselSection
-                  title={section.title}
-                  items={section.items}
-                />
+                <CarouselSection title={section.title} items={section.items} />
                 {index === 0 && <DiscoverCTASection />}
+                {index === 1 && <NewsHeadlinesSection />}
               </div>
             ))}
           </div>

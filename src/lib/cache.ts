@@ -5,9 +5,10 @@ const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60; // 1 week
 export async function cached<T>(
   key: string,
   fetcher: () => Promise<T>,
+  ttl: number = CACHE_TTL_SECONDS,
 ): Promise<T> {
   const getCached = unstable_cache(fetcher, [key], {
-    revalidate: CACHE_TTL_SECONDS,
+    revalidate: ttl,
   });
   return getCached();
 }

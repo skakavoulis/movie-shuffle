@@ -24,6 +24,7 @@ import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
+import MovieNewsSection from "@/components/MovieNewsSection";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
@@ -343,6 +344,9 @@ export default function MoviePage({
             </div>
           </section>
         )}
+
+        {/* Related news */}
+        <MovieNewsSection title={`${movie.title} movie`} />
 
         {/* Reviews */}
         <ReviewSection

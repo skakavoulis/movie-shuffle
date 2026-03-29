@@ -24,6 +24,7 @@ import ReviewSection from "@/components/ReviewSection";
 import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
+import MovieNewsSection from "@/components/MovieNewsSection";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
@@ -349,6 +350,9 @@ export default function TVShowPage({
             </div>
           </section>
         )}
+
+        {/* Related news */}
+        <MovieNewsSection title={`${show.name} tv show`} />
 
         {/* Reviews */}
         <ReviewSection

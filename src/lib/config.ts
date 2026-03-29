@@ -8,6 +8,10 @@ export const config = {
     baseUrl: "https://api.themoviedb.org/3",
     imageBaseUrl: "https://image.tmdb.org/t/p",
   },
+  gnews: {
+    apiKey: process.env.GNEWS_API_KEY ?? "",
+    baseUrl: "https://gnews.io/api/v4",
+  },
 } as const;
 
 export function assertServerConfig() {
