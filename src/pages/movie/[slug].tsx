@@ -58,7 +58,7 @@ export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
       };
     }
 
-    return { props: { movie }, revalidate: 86_400 };
+    return { props: { movie }, revalidate: 604_800 };
   } catch {
     return { notFound: true };
   }

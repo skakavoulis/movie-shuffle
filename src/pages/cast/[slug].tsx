@@ -50,7 +50,7 @@ export const getStaticProps: GetStaticProps<CastPageProps> = async ({
       };
     }
 
-    return { props: { person }, revalidate: 86_400 };
+    return { props: { person }, revalidate: 604_800 };
   } catch {
     return { notFound: true };
   }

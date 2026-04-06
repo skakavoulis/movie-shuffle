@@ -150,7 +150,7 @@ function buildFilterParams(
 
 export const getStaticProps: GetStaticProps = async () => ({
   props: {},
-  revalidate: 3600,
+  revalidate: 86_400,
 });
 
 export default function DiscoverPage() {

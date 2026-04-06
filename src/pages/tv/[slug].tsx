@@ -58,7 +58,7 @@ export const getStaticProps: GetStaticProps<TVPageProps> = async ({
       };
     }
 
-    return { props: { show }, revalidate: 86_400 };
+    return { props: { show }, revalidate: 604_800 };
   } catch {
     return { notFound: true };
   }
