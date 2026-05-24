@@ -1,11 +1,7 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import type {
-  GetStaticPaths,
-  GetStaticProps,
-  InferGetStaticPropsType,
-} from "next";
+import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import {
   getPersonDetails,
   parsePersonIdFromSlug,
@@ -16,19 +12,16 @@ import {
   tvHref,
   type TMDBPersonDetails,
 } from "@/lib/tmdb";
+import { CDN_LONG } from "@/lib/cdnCache";
 import Layout from "@/components/Layout";
 
 interface CastPageProps {
   person: TMDBPersonDetails;
 }
 
-export const getStaticPaths: GetStaticPaths = async () => ({
-  paths: [],
-  fallback: "blocking",
-});
-
-export const getStaticProps: GetStaticProps<CastPageProps> = async ({
+export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
   params,
+  res,
 }) => {
   const slug = params?.slug as string;
   const personId = parsePersonIdFromSlug(slug);
@@ -50,7 +43,8 @@ export const getStaticProps: GetStaticProps<CastPageProps> = async ({
       };
     }
 
-    return { props: { person }, revalidate: 604_800 };
+    res.setHeader("Cache-Control", CDN_LONG);
+    return { props: { person } };
   } catch {
     return { notFound: true };
   }
@@ -75,7 +69,7 @@ function formatDate(dateStr: string) {
 
 export default function CastPage({
   person,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const credits = person.combined_credits?.cast ?? [];
 
   const sortedCredits = [...credits]

@@ -5,6 +5,7 @@ import {
   type TMDBMovie,
   type TMDBTVShow,
 } from "@/lib/tmdb";
+import { CDN_MEDIUM } from "@/lib/cdnCache";
 
 function slimDiscoverResults(
   results: (TMDBMovie | TMDBTVShow)[],
@@ -101,7 +102,7 @@ export default async function handler(
       [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
     }
 
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", CDN_MEDIUM);
     return res.status(200).json(slimDiscoverResults(filtered, isTV));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to fetch";

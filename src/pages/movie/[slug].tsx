@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import type {
-  GetStaticPaths,
-  GetStaticProps,
-  InferGetStaticPropsType,
-} from "next";
+import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import {
   getMovieDetails,
   parseMovieIdFromSlug,
@@ -17,6 +13,7 @@ import {
   personHref,
   type TMDBMovieDetails,
 } from "@/lib/tmdb";
+import { CDN_LONG } from "@/lib/cdnCache";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -30,13 +27,9 @@ interface MoviePageProps {
   movie: TMDBMovieDetails;
 }
 
-export const getStaticPaths: GetStaticPaths = async () => ({
-  paths: [],
-  fallback: "blocking",
-});
-
-export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
+export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
   params,
+  res,
 }) => {
   const slug = params?.slug as string;
   const movieId = parseMovieIdFromSlug(slug);
@@ -58,7 +51,8 @@ export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
       };
     }
 
-    return { props: { movie }, revalidate: 604_800 };
+    res.setHeader("Cache-Control", CDN_LONG);
+    return { props: { movie } };
   } catch {
     return { notFound: true };
   }
@@ -78,7 +72,7 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
   const rating = movie.vote_average?.toFixed(1);

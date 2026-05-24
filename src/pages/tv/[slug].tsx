@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import type {
-  GetStaticPaths,
-  GetStaticProps,
-  InferGetStaticPropsType,
-} from "next";
+import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import {
   getTVShowDetails,
   parseTVIdFromSlug,
@@ -17,6 +13,7 @@ import {
   personHref,
   type TMDBTVShowDetails,
 } from "@/lib/tmdb";
+import { CDN_LONG } from "@/lib/cdnCache";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -30,13 +27,9 @@ interface TVPageProps {
   show: TMDBTVShowDetails;
 }
 
-export const getStaticPaths: GetStaticPaths = async () => ({
-  paths: [],
-  fallback: "blocking",
-});
-
-export const getStaticProps: GetStaticProps<TVPageProps> = async ({
+export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
   params,
+  res,
 }) => {
   const slug = params?.slug as string;
   const showId = parseTVIdFromSlug(slug);
@@ -58,7 +51,8 @@ export const getStaticProps: GetStaticProps<TVPageProps> = async ({
       };
     }
 
-    return { props: { show }, revalidate: 604_800 };
+    res.setHeader("Cache-Control", CDN_LONG);
+    return { props: { show } };
   } catch {
     return { notFound: true };
   }
@@ -66,7 +60,7 @@ export const getStaticProps: GetStaticProps<TVPageProps> = async ({
 
 export default function TVShowPage({
   show,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
   const rating = show.vote_average?.toFixed(1);

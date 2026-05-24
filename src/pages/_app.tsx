@@ -4,7 +4,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { LikesProvider } from "@/context/LikesContext";
 import { WatchlistProvider } from "@/context/WatchlistContext";
 import { RegionProvider } from "@/context/RegionContext";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import Hotjar from "@/components/Hotjar";
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -14,7 +13,6 @@ export default function App({ Component, pageProps }: AppProps) {
         <LikesProvider>
           <WatchlistProvider>
             <Component {...pageProps} />
-            <SpeedInsights />
             <Hotjar />
           </WatchlistProvider>
         </LikesProvider>

@@ -49,13 +49,13 @@ export const getStaticProps: GetStaticProps<TVShowsProps> = async () => {
         sections,
         error: null,
       },
-      revalidate: 3600,
+      revalidate: 21_600,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to fetch TV shows";
     return {
       props: { hero: null, sections: [], error: message },
-      revalidate: 3600,
+      revalidate: 21_600,
     };
   }
 };
