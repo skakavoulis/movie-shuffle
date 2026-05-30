@@ -171,6 +171,8 @@ export default function DiscoverPage() {
   const [likeBurst, setLikeBurst] = useState(false);
 
   const seenIds = useRef(new Set<number>());
+  const nextPageRef = useRef(1);
+  const exhaustedRef = useRef(false);
   const fetchingRef = useRef(false);
   const filtersRef = useRef(filters);
   const mediaTypeRef = useRef(mediaType);
@@ -211,7 +213,7 @@ export default function DiscoverPage() {
   }, [region, regionLoading]);
 
   const fetchBatch = useCallback(async () => {
-    if (fetchingRef.current) return;
+    if (fetchingRef.current || exhaustedRef.current) return;
     fetchingRef.current = true;
     setNoResults(false);
     try {
@@ -220,11 +222,17 @@ export default function DiscoverPage() {
         filtersRef.current,
         regionRef.current,
       );
-      const url = `/api/discover?${qs}`;
+      const url = `/api/discover?${qs}&page=${nextPageRef.current}`;
       const res = await fetch(url);
       if (!res.ok) return;
-      const results: DiscoverItem[] = await res.json();
-      const fresh = results.filter((m) => !seenIds.current.has(m.id));
+      const data: { results: DiscoverItem[]; nextPage: number | null } =
+        await res.json();
+      if (data.nextPage != null) {
+        nextPageRef.current = data.nextPage;
+      } else {
+        exhaustedRef.current = true;
+      }
+      const fresh = data.results.filter((m) => !seenIds.current.has(m.id));
       if (fresh.length === 0) {
         setNoResults(true);
       } else {
@@ -251,6 +259,8 @@ export default function DiscoverPage() {
     }
     hydratedRef.current = true;
     seenIds.current.clear();
+    nextPageRef.current = 1;
+    exhaustedRef.current = false;
     setQueue([]);
     setLoading(true);
     fetchingRef.current = false;
@@ -281,6 +291,8 @@ export default function DiscoverPage() {
       mediaTypeRef.current = next;
       setMediaType(next);
       seenIds.current.clear();
+      nextPageRef.current = 1;
+      exhaustedRef.current = false;
       setQueue([]);
       setNoResults(false);
       setLoading(true);
@@ -291,7 +303,7 @@ export default function DiscoverPage() {
   );
 
   useEffect(() => {
-    if (queue.length < 5 && !noResults) fetchBatch();
+    if (queue.length < 5 && !noResults && !exhaustedRef.current) fetchBatch();
   }, [queue.length, fetchBatch, noResults]);
 
   useEffect(() => {
@@ -308,6 +320,8 @@ export default function DiscoverPage() {
       filtersRef.current = newFilters;
       setFilters(newFilters);
       seenIds.current.clear();
+      nextPageRef.current = 1;
+      exhaustedRef.current = false;
       setQueue([]);
       setNoResults(false);
       setLoading(true);

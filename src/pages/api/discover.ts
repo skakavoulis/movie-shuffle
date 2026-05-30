@@ -49,6 +49,7 @@ export default async function handler(
   try {
     const type = (req.query.type as string) || "movie";
     const isTV = type === "tv";
+    let page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
 
     const params: Record<string, string> = {
       include_adult: "false",
@@ -82,28 +83,31 @@ export default async function handler(
     }
 
     const discover = isTV ? discoverTVShows : discoverMovies;
-    const firstPage = await discover({ ...params, page: "1" });
-    const maxPage = Math.min(firstPage.total_pages, 30);
 
-    const randomPage =
-      maxPage > 1 ? Math.floor(Math.random() * maxPage) + 1 : 1;
+    let filtered: (TMDBMovie | TMDBTVShow)[] = [];
 
-    const data =
-      randomPage === 1
-        ? firstPage
-        : await discover({ ...params, page: String(randomPage) });
+    while (true) {
+      const data = await discover({ ...params, page: String(page) });
 
-    const filtered = data.results.filter(
-      (m) => m.poster_path && m.overview && m.vote_average > 0,
-    );
+      if (data.results.length === 0) {
+        res.setHeader("Cache-Control", CDN_MEDIUM);
+        return res.status(200).json({ results: [], nextPage: null });
+      }
 
-    for (let i = filtered.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+      filtered = data.results.filter(
+        (m) => m.poster_path && m.overview && m.vote_average > 0,
+      );
+
+      page++;
+
+      if (filtered.length > 0 || page > data.total_pages) break;
     }
 
     res.setHeader("Cache-Control", CDN_MEDIUM);
-    return res.status(200).json(slimDiscoverResults(filtered, isTV));
+    return res.status(200).json({
+      results: slimDiscoverResults(filtered, isTV),
+      nextPage: filtered.length > 0 ? page : null,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to fetch";
     return res.status(500).json({ error: msg });
