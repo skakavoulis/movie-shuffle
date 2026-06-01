@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -86,6 +87,10 @@ export default function CastPage({
   person,
   videos,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const credits = person.combined_credits?.cast ?? [];
 
   const sortedCredits = [...credits]

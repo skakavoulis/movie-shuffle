@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import {
@@ -153,7 +154,10 @@ export const getStaticProps: GetStaticProps = async () => ({
   revalidate: 86_400,
 });
 
+const TAP_THRESHOLD = 6;
+
 export default function DiscoverPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { region, loading: regionLoading } = useRegion();
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
@@ -440,9 +444,17 @@ export default function DiscoverPage() {
         throwCard(ds.dx > 0 ? "right" : "left");
       } else {
         springBack();
+        const dy = e.clientY - ds.startY;
+        if (Math.abs(ds.dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD) {
+          const top = queue[0];
+          if (top) {
+            const href = isMovie(top) ? movieHref(top) : tvHref(top);
+            router.push(href);
+          }
+        }
       }
     },
-    [throwCard, springBack],
+    [throwCard, springBack, queue, router],
   );
 
   const onPointerCancel = useCallback(() => {
