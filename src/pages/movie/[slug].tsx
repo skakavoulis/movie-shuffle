@@ -22,6 +22,7 @@ import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
+import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
@@ -81,6 +82,13 @@ export default function MoviePage({
   const trailer = movie.videos?.results?.find(
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
+  );
+  const additionalVideos = (movie.videos?.results ?? []).filter(
+    (v) =>
+      v.site === "YouTube" &&
+      v.type !== "Trailer" &&
+      v.type !== "Teaser" &&
+      v.id !== trailer?.id,
   );
   const similar = (movie.similar?.results ?? [])
     .slice(0, 15)
@@ -341,6 +349,11 @@ export default function MoviePage({
 
         {/* Related news */}
         <MovieNewsSection title={`${movie.title} movie`} />
+
+        {/* Additional Videos Carousel */}
+        {additionalVideos.length > 0 && (
+          <AdditionalVideosCarousel videos={additionalVideos} />
+        )}
 
         {/* Reviews */}
         <ReviewSection
