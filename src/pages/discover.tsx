@@ -15,6 +15,7 @@ import {
   type TMDBWatchProvider,
 } from "@/lib/tmdb";
 import { useLikes } from "@/context/LikesContext";
+import { useWatchlist } from "@/context/WatchlistContext";
 import { useAuth } from "@/context/AuthContext";
 import DiscoverFiltersModal, {
   DEFAULT_FILTERS,
@@ -48,6 +49,52 @@ type DiscoverItem = DiscoverSlimMovie | DiscoverSlimTV;
 
 function isMovie(item: DiscoverItem): item is DiscoverSlimMovie {
   return "title" in item && "release_date" in item;
+}
+
+const SESSION_SEEN_KEY = "discover-seen";
+
+function loadSessionSeen(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(SESSION_SEEN_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function addSessionSeen(
+  set: Set<string>,
+  mediaType: DiscoverMediaType,
+  id: number,
+) {
+  const key = `${mediaType}:${id}`;
+  set.add(key);
+  try {
+    sessionStorage.setItem(SESSION_SEEN_KEY, JSON.stringify([...set]));
+  } catch {}
+}
+
+function hasSessionSeen(
+  set: Set<string>,
+  mediaType: DiscoverMediaType,
+  id: number,
+) {
+  return set.has(`${mediaType}:${id}`);
+}
+
+function filterUnseen(
+  items: DiscoverItem[],
+  mediaType: DiscoverMediaType,
+  sessionSeen: Set<string>,
+  isLiked: (mt: DiscoverMediaType, id: number) => boolean,
+  getWatchlistStatus: (mt: DiscoverMediaType, id: number) => string | null,
+): DiscoverItem[] {
+  return items.filter(
+    (m) =>
+      !hasSessionSeen(sessionSeen, mediaType, m.id) &&
+      !isLiked(mediaType, m.id) &&
+      !getWatchlistStatus(mediaType, m.id),
+  );
 }
 
 const STORAGE_KEY_FILTERS = "discover-filters";
@@ -174,7 +221,8 @@ export default function DiscoverPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [likeBurst, setLikeBurst] = useState(false);
 
-  const seenIds = useRef(new Set<number>());
+  const sessionSeen = useRef<Set<string>>(new Set());
+  const sessionSeenLoaded = useRef(false);
   const nextPageRef = useRef(1);
   const exhaustedRef = useRef(false);
   const fetchingRef = useRef(false);
@@ -191,6 +239,11 @@ export default function DiscoverPage() {
   mediaTypeRef.current = mediaType;
 
   const { isLiked, toggleLike } = useLikes();
+  const { getStatus: getWatchlistStatus } = useWatchlist();
+  const isLikedRef = useRef(isLiked);
+  isLikedRef.current = isLiked;
+  const getWatchlistStatusRef = useRef(getWatchlistStatus);
+  getWatchlistStatusRef.current = getWatchlistStatus;
   const regionRef = useRef(region);
   regionRef.current = region;
 
@@ -226,17 +279,27 @@ export default function DiscoverPage() {
         filtersRef.current,
         regionRef.current,
       );
-      const url = `/api/discover?${qs}&page=${nextPageRef.current}`;
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const data: { results: DiscoverItem[]; nextPage: number | null } =
-        await res.json();
-      if (data.nextPage != null) {
-        nextPageRef.current = data.nextPage;
-      } else {
-        exhaustedRef.current = true;
+      let fresh: DiscoverItem[] = [];
+      while (fresh.length === 0) {
+        const url = `/api/discover?${qs}&page=${nextPageRef.current}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data: { results: DiscoverItem[]; nextPage: number | null } =
+          await res.json();
+        if (data.nextPage != null) {
+          nextPageRef.current = data.nextPage;
+        } else {
+          exhaustedRef.current = true;
+        }
+        fresh = filterUnseen(
+          data.results,
+          mediaTypeRef.current,
+          sessionSeen.current,
+          isLikedRef.current,
+          getWatchlistStatusRef.current,
+        );
+        if (exhaustedRef.current) break;
       }
-      const fresh = data.results.filter((m) => !seenIds.current.has(m.id));
       if (fresh.length === 0) {
         setNoResults(true);
       } else {
@@ -262,7 +325,10 @@ export default function DiscoverPage() {
       setFilters(savedFilters);
     }
     hydratedRef.current = true;
-    seenIds.current.clear();
+    if (!sessionSeenLoaded.current) {
+      sessionSeen.current = loadSessionSeen();
+      sessionSeenLoaded.current = true;
+    }
     nextPageRef.current = 1;
     exhaustedRef.current = false;
     setQueue([]);
@@ -294,7 +360,6 @@ export default function DiscoverPage() {
       setFilters(DEFAULT_FILTERS);
       mediaTypeRef.current = next;
       setMediaType(next);
-      seenIds.current.clear();
       nextPageRef.current = 1;
       exhaustedRef.current = false;
       setQueue([]);
@@ -323,7 +388,6 @@ export default function DiscoverPage() {
     (newFilters: DiscoverFilters) => {
       filtersRef.current = newFilters;
       setFilters(newFilters);
-      seenIds.current.clear();
       nextPageRef.current = 1;
       exhaustedRef.current = false;
       setQueue([]);
@@ -340,7 +404,13 @@ export default function DiscoverPage() {
     clearTimeout(throwTimerRef.current);
     throwingRef.current = false;
     setQueue((prev) => {
-      if (prev.length > 0) seenIds.current.add(prev[0].id);
+      if (prev.length > 0) {
+        addSessionSeen(
+          sessionSeen.current,
+          mediaTypeRef.current,
+          prev[0].id,
+        );
+      }
       return prev.slice(1);
     });
   }, []);
@@ -417,7 +487,6 @@ export default function DiscoverPage() {
     const rotation = ds.dx * 0.06;
     const lift = -Math.abs(ds.dx) * 0.04;
     card.style.transform = `translateX(${ds.dx}px) translateY(${lift}px) rotate(${rotation}deg)`;
-
   }, []);
 
   const springBack = useCallback(() => {
