@@ -24,7 +24,7 @@ export async function searchYouTubeVideos(
     if (!res.ok) return [];
 
     const html = await res.text();
-    const match = html.match(/var ytInitialData\s*=\s*({.+?});<\/script>/s);
+    const match = html.match(/var ytInitialData\s*=\s*({[\s\S]+?});<\/script>/);
     if (!match) return [];
 
     const data = JSON.parse(match[1]);
