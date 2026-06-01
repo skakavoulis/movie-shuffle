@@ -30,9 +30,7 @@ function StarRatingDisplay({ rating }: { rating: number }) {
 }
 
 function timeAgo(dateStr: string) {
-  const seconds = Math.floor(
-    (Date.now() - new Date(dateStr).getTime()) / 1000
-  );
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -146,8 +144,18 @@ function ReviewModal({
               className="p-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
               aria-label="Close"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -235,6 +243,10 @@ export default function ReviewSection({
 }: ReviewSectionProps) {
   const [showAll, setShowAll] = useState(false);
   const [modalReview, setModalReview] = useState<TMDBReview | null>(null);
+  reviews.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
   const displayed = showAll ? reviews : reviews.slice(0, 3);
 
   return (
