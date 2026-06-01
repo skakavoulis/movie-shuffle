@@ -306,6 +306,11 @@ export default function TVShowPage({
           </div>
         </div>
 
+        {/* Additional Videos Carousel */}
+        {additionalVideos.length > 0 && (
+          <AdditionalVideosCarousel videos={additionalVideos} />
+        )}
+
         {/* Where to watch */}
         <TitleWatchProviders
           mediaType="tv"
@@ -355,11 +360,6 @@ export default function TVShowPage({
 
         {/* Related news */}
         <MovieNewsSection title={`${show.name} tv show`} />
-
-        {/* Additional Videos Carousel */}
-        {additionalVideos.length > 0 && (
-          <AdditionalVideosCarousel videos={additionalVideos} />
-        )}
 
         {/* Reviews */}
         <ReviewSection
