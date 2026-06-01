@@ -14,9 +14,13 @@ import {
 } from "@/lib/tmdb";
 import { CDN_LONG } from "@/lib/cdnCache";
 import Layout from "@/components/Layout";
+import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
+import { searchYouTubeVideos } from "@/lib/youtube";
+import type { TMDBVideo } from "@/lib/tmdb";
 
 interface CastPageProps {
   person: TMDBPersonDetails;
+  videos: TMDBVideo[];
 }
 
 export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
@@ -43,8 +47,17 @@ export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
       };
     }
 
+    const ytResults = await searchYouTubeVideos(person.name);
+    const videos: TMDBVideo[] = ytResults.map((v) => ({
+      id: v.id,
+      key: v.id,
+      name: v.title,
+      site: "YouTube",
+      type: "Video",
+    }));
+
     res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { person } };
+    return { props: { person, videos } };
   } catch {
     return { notFound: true };
   }
@@ -69,6 +82,7 @@ function formatDate(dateStr: string) {
 
 export default function CastPage({
   person,
+  videos,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const credits = person.combined_credits?.cast ?? [];
 
@@ -248,6 +262,9 @@ export default function CastPage({
                 </div>
               </div>
             )}
+
+            {/* Videos */}
+            <AdditionalVideosCarousel videos={videos} />
 
             {/* Known For */}
             {knownFor.length > 0 && (
