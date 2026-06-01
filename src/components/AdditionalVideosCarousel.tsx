@@ -11,6 +11,7 @@ export default function AdditionalVideosCarousel({
   const [activeIdx, setActiveIdx] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -73,14 +74,18 @@ export default function AdditionalVideosCarousel({
     return () => window.removeEventListener("message", onMessage);
   }, [goToNext]);
 
+  useEffect(() => {
+    thumbnailRefs.current[activeIdx]?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeIdx]);
+
   const activeVideo = videos[activeIdx];
 
   return (
     <section className="mt-12">
-      <h2 className="text-xl md:text-2xl font-bold text-text-primary mb-6">
-        Additional Videos
-      </h2>
-
       <div className="relative group">
         <div className="relative w-full max-w-4xl mx-auto aspect-video rounded-xl overflow-hidden shadow-2xl bg-black ring-1 ring-white/10">
           <iframe
@@ -149,9 +154,12 @@ export default function AdditionalVideosCarousel({
       </div>
 
       {videos.length > 1 && (
-        <div className="flex gap-3 mt-4 overflow-x-auto hide-scrollbar pb-2 max-w-4xl mx-auto">
+        <div className="flex gap-3 mt-4 overflow-x-auto hide-scrollbar pb-2 w-full p-[3px]">
           {videos.map((video, idx) => (
             <button
+              ref={(el) => {
+                thumbnailRefs.current[idx] = el;
+              }}
               key={video.id}
               onClick={() => setActiveIdx(idx)}
               className={`flex-shrink-0 relative w-[160px] md:w-[200px] aspect-video rounded-lg overflow-hidden transition-all ${

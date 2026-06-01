@@ -300,6 +300,11 @@ export default function MoviePage({
           </div>
         </div>
 
+        {/* Additional Videos Carousel */}
+        {additionalVideos.length > 0 && (
+          <AdditionalVideosCarousel videos={additionalVideos} />
+        )}
+
         {/* Where to watch */}
         <TitleWatchProviders
           mediaType="movie"
@@ -349,11 +354,6 @@ export default function MoviePage({
 
         {/* Related news */}
         <MovieNewsSection title={`${movie.title} movie`} />
-
-        {/* Additional Videos Carousel */}
-        {additionalVideos.length > 0 && (
-          <AdditionalVideosCarousel videos={additionalVideos} />
-        )}
 
         {/* Reviews */}
         <ReviewSection
