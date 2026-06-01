@@ -22,7 +22,13 @@ export default function AdditionalVideosCarousel({
   }, []);
 
   const goToNext = useCallback(() => {
-    setActiveIdx((prev) => (prev + 1) % videos.length);
+    setActiveIdx((prev) => {
+      // If we're at the last video, do not advance
+      if (prev === videos.length - 1) {
+        return prev;
+      }
+      return prev + 1;
+    });
   }, [videos.length]);
 
   const goToPrev = useCallback(() => {

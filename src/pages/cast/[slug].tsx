@@ -47,7 +47,9 @@ export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
       };
     }
 
-    const ytResults = await searchYouTubeVideos(person.name);
+    const ytResults = await searchYouTubeVideos(
+      `${person.name} ${person.known_for_department}`,
+    );
     const videos: TMDBVideo[] = ytResults.map((v) => ({
       id: v.id,
       key: v.id,
