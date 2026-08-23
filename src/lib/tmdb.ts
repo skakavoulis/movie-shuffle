@@ -69,6 +69,39 @@ export interface TMDBTVShow {
   genre_ids: number[];
 }
 
+export interface TMDBSeasonSummary {
+  id: number;
+  name: string;
+  overview: string;
+  season_number: number;
+  episode_count: number;
+  air_date: string | null;
+  poster_path: string | null;
+  vote_average?: number;
+}
+
+export interface TMDBEpisode {
+  id: number;
+  name: string;
+  overview: string;
+  season_number: number;
+  episode_number: number;
+  air_date: string | null;
+  runtime: number | null;
+  still_path: string | null;
+  vote_average: number;
+}
+
+export interface TMDBSeasonDetails {
+  id: number;
+  name: string;
+  overview: string;
+  season_number: number;
+  air_date: string | null;
+  poster_path: string | null;
+  episodes: TMDBEpisode[];
+}
+
 export interface TMDBTVShowDetails {
   id: number;
   name: string;
@@ -87,6 +120,7 @@ export interface TMDBTVShowDetails {
   genres: TMDBGenre[];
   networks: { id: number; name: string; logo_path: string | null }[];
   created_by: { id: number; name: string; profile_path: string | null }[];
+  seasons?: TMDBSeasonSummary[];
   credits?: {
     cast: TMDBCastMember[];
     crew: TMDBCrewMember[];
@@ -275,6 +309,13 @@ export async function getTVShowDetails(id: number) {
   );
 }
 
+/** Episode lists are only exposed per season, never on the show detail payload. */
+export async function getTVSeasonDetails(tvId: number, seasonNumber: number) {
+  return cached(`tv:${tvId}:season:${seasonNumber}`, () =>
+    tmdbFetch<TMDBSeasonDetails>(`/tv/${tvId}/season/${seasonNumber}`),
+  );
+}
+
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -410,6 +451,14 @@ export function posterUrl(
 export function backdropUrl(
   path: string | null,
   size: "w780" | "w1280" | "original" = "w1280",
+) {
+  if (!path) return null;
+  return `${config.tmdb.imageBaseUrl}/${size}${path}`;
+}
+
+export function stillUrl(
+  path: string | null,
+  size: "w185" | "w300" | "original" = "w300",
 ) {
   if (!path) return null;
   return `${config.tmdb.imageBaseUrl}/${size}${path}`;

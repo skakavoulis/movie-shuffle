@@ -26,6 +26,7 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
+import SeasonsSection from "@/components/SeasonsSection";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
@@ -330,6 +331,9 @@ export default function TVShowPage({
           mediaId={show.id}
           title={show.name}
         />
+
+        {/* Seasons & episodes */}
+        <SeasonsSection showId={show.id} seasons={show.seasons ?? []} />
 
         {/* Cast */}
         {cast.length > 0 && (
