@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import type {
+  GetStaticPaths,
+  GetStaticProps,
+  InferGetStaticPropsType,
+} from "next";
 import {
   getMovieDetails,
   parseMovieIdFromSlug,
@@ -13,7 +17,6 @@ import {
   personHref,
   type TMDBMovieDetails,
 } from "@/lib/tmdb";
-import { CDN_LONG } from "@/lib/cdnCache";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -28,9 +31,17 @@ interface MoviePageProps {
   movie: TMDBMovieDetails;
 }
 
-export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
+const REVALIDATE_SECONDS = 86_400; // 1 day
+const NOT_FOUND_REVALIDATE_SECONDS = 3600; // retry TMDB failures within the hour
+
+/** Titles are generated on first request rather than at build time. */
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
   params,
-  res,
 }) => {
   const slug = params?.slug as string;
   const movieId = parseMovieIdFromSlug(slug);
@@ -52,10 +63,9 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
       };
     }
 
-    res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { movie } };
+    return { props: { movie }, revalidate: REVALIDATE_SECONDS };
   } catch {
-    return { notFound: true };
+    return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
   }
 };
 
@@ -73,7 +83,7 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
   const rating = movie.vote_average?.toFixed(1);

@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import type {
+  GetStaticPaths,
+  GetStaticProps,
+  InferGetStaticPropsType,
+} from "next";
 import {
   getTVShowDetails,
   parseTVIdFromSlug,
@@ -13,7 +17,6 @@ import {
   personHref,
   type TMDBTVShowDetails,
 } from "@/lib/tmdb";
-import { CDN_LONG } from "@/lib/cdnCache";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -28,9 +31,17 @@ interface TVPageProps {
   show: TMDBTVShowDetails;
 }
 
-export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
+const REVALIDATE_SECONDS = 86_400; // 1 day
+const NOT_FOUND_REVALIDATE_SECONDS = 3600; // retry TMDB failures within the hour
+
+/** Titles are generated on first request rather than at build time. */
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps<TVPageProps> = async ({
   params,
-  res,
 }) => {
   const slug = params?.slug as string;
   const showId = parseTVIdFromSlug(slug);
@@ -52,16 +63,15 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
       };
     }
 
-    res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { show } };
+    return { props: { show }, revalidate: REVALIDATE_SECONDS };
   } catch {
-    return { notFound: true };
+    return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
   }
 };
 
 export default function TVShowPage({
   show,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
   const rating = show.vote_average?.toFixed(1);
