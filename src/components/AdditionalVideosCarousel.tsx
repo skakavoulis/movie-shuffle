@@ -3,10 +3,12 @@ import type { TMDBVideo } from "@/lib/tmdb";
 
 interface AdditionalVideosCarouselProps {
   videos: TMDBVideo[];
+  paused?: boolean;
 }
 
 export default function AdditionalVideosCarousel({
   videos,
+  paused = false,
 }: AdditionalVideosCarouselProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -35,6 +37,15 @@ export default function AdditionalVideosCarousel({
     setActiveIdx((prev) => (prev - 1 + videos.length) % videos.length);
   }, [videos.length]);
 
+  const sendCommand = useCallback((func: string, args: unknown[] = []) => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event: "command", func, args }),
+      "https://www.youtube.com",
+    );
+  }, []);
+
   const initYouTubeListener = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow) return;
@@ -42,23 +53,14 @@ export default function AdditionalVideosCarousel({
       JSON.stringify({ event: "listening" }),
       "https://www.youtube.com",
     );
-    iframe.contentWindow.postMessage(
-      JSON.stringify({
-        event: "command",
-        func: "addEventListener",
-        args: ["onStateChange"],
-      }),
-      "https://www.youtube.com",
-    );
-    iframe.contentWindow.postMessage(
-      JSON.stringify({
-        event: "command",
-        func: "addEventListener",
-        args: ["onError"],
-      }),
-      "https://www.youtube.com",
-    );
-  }, []);
+    sendCommand("addEventListener", ["onStateChange"]);
+    sendCommand("addEventListener", ["onError"]);
+    if (paused) sendCommand("pauseVideo");
+  }, [paused, sendCommand]);
+
+  useEffect(() => {
+    if (paused) sendCommand("pauseVideo");
+  }, [paused, sendCommand, activeIdx]);
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {

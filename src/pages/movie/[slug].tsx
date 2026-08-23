@@ -83,13 +83,16 @@ export default function MoviePage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const additionalVideos = (movie.videos?.results ?? []).filter(
-    (v) =>
-      v.site === "YouTube" &&
-      v.type !== "Trailer" &&
-      v.type !== "Teaser" &&
-      v.id !== trailer?.id,
-  );
+  const movieVideos = [
+    ...(trailer ? [trailer] : []),
+    ...(movie.videos?.results ?? []).filter(
+      (v) =>
+        v.site === "YouTube" &&
+        v.type !== "Trailer" &&
+        v.type !== "Teaser" &&
+        v.id !== trailer?.id,
+    ),
+  ];
   const similar = (movie.similar?.results ?? [])
     .slice(0, 15)
     .map(movieToMediaItem);
@@ -300,9 +303,9 @@ export default function MoviePage({
           </div>
         </div>
 
-        {/* Additional Videos Carousel */}
-        {additionalVideos.length > 0 && (
-          <AdditionalVideosCarousel videos={additionalVideos} />
+        {/* Movie Videos Carousel */}
+        {movieVideos.length > 0 && (
+          <AdditionalVideosCarousel videos={movieVideos} paused={trailerOpen} />
         )}
 
         {/* Where to watch */}
