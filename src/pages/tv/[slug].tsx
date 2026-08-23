@@ -81,13 +81,16 @@ export default function TVShowPage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const additionalVideos = (show.videos?.results ?? []).filter(
-    (v) =>
-      v.site === "YouTube" &&
-      v.type !== "Trailer" &&
-      v.type !== "Teaser" &&
-      v.id !== trailer?.id,
-  );
+  const showVideos = [
+    ...(trailer ? [trailer] : []),
+    ...(show.videos?.results ?? []).filter(
+      (v) =>
+        v.site === "YouTube" &&
+        v.type !== "Trailer" &&
+        v.type !== "Teaser" &&
+        v.id !== trailer?.id,
+    ),
+  ];
   const similar = (show.similar?.results ?? [])
     .slice(0, 15)
     .map(tvShowToMediaItem);
@@ -316,9 +319,9 @@ export default function TVShowPage({
           </div>
         </div>
 
-        {/* Additional Videos Carousel */}
-        {additionalVideos.length > 0 && (
-          <AdditionalVideosCarousel videos={additionalVideos} />
+        {/* Videos Carousel */}
+        {showVideos.length > 0 && (
+          <AdditionalVideosCarousel videos={showVideos} paused={trailerOpen} />
         )}
 
         {/* Where to watch */}
