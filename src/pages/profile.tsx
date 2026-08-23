@@ -44,7 +44,6 @@ export const getServerSideProps = withAuth<ProfilePageProps>(
         .select()
         .single();
       profile = newProfile;
-      console.log(error);
     }
 
     return {

@@ -49,7 +49,6 @@ async function fetchExternalRatings(
   }
 
   const data = (await res.json()) as MDBListResponse;
-  console.log(JSON.stringify(data, null, 2));
   const ratings = data.ratings ?? [];
   const imdb = pick(ratings, "imdb");
 
