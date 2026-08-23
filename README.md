@@ -23,6 +23,7 @@ cp .env.local.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
 | `TMDB_API_KEY` | Your TMDB v3 API key |
+| `MDBLIST_API_KEY` | Optional. Free [MDBList](https://mdblist.com/preferences) key (1,000 requests/day) that adds IMDb, Rotten Tomatoes, and Metacritic ratings to title pages. Without it those pills are simply hidden. |
 
 ### Supabase Setup
 

@@ -17,6 +17,10 @@ import {
   personHref,
   type TMDBMovieDetails,
 } from "@/lib/tmdb";
+import {
+  getExternalRatings,
+  type ExternalRatings as ExternalRatingsData,
+} from "@/lib/ratings";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -26,9 +30,11 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
+import ExternalRatings from "@/components/ExternalRatings";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
+  ratings: ExternalRatingsData | null;
 }
 
 const REVALIDATE_SECONDS = 86_400; // 1 day
@@ -63,7 +69,10 @@ export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
       };
     }
 
-    return { props: { movie }, revalidate: REVALIDATE_SECONDS };
+    // Resolved after the redirect check so non-canonical URLs don't burn quota.
+    const ratings = await getExternalRatings("movie", movie.id);
+
+    return { props: { movie, ratings }, revalidate: REVALIDATE_SECONDS };
   } catch {
     return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
   }
@@ -83,10 +92,11 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
+  ratings,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
-  const rating = movie.vote_average?.toFixed(1);
+  const tmdbRating = movie.vote_average?.toFixed(1);
   const director = movie.credits?.crew?.find((c) => c.job === "Director");
   const cast = movie.credits?.cast?.slice(0, 12) ?? [];
   const trailer = movie.videos?.results?.find(
@@ -190,7 +200,7 @@ export default function MoviePage({
 
             {/* Meta pills */}
             <div className="flex flex-wrap items-center gap-3 mt-4">
-              {rating && (
+              {tmdbRating && (
                 <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400/10 text-yellow-400 text-sm font-semibold">
                   <svg
                     className="w-4 h-4"
@@ -199,12 +209,15 @@ export default function MoviePage({
                   >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
-                  {rating}
+                  {tmdbRating}
                   <span className="text-text-muted font-normal ml-1">
                     ({movie.vote_count.toLocaleString()})
                   </span>
                 </span>
               )}
+              <ExternalRatings ratings={ratings} />
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-4">
               {year && (
                 <span className="px-3 py-1 rounded-full bg-white/5 text-text-secondary text-sm">
                   {year}

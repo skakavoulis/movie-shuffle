@@ -12,6 +12,10 @@ export const config = {
     apiKey: process.env.GNEWS_API_KEY ?? "",
     baseUrl: "https://gnews.io/api/v4",
   },
+  mdblist: {
+    apiKey: process.env.MDBLIST_API_KEY ?? "",
+    baseUrl: "https://api.mdblist.com",
+  },
 } as const;
 
 export function assertServerConfig() {
