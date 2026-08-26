@@ -91,6 +91,7 @@ export default function AdditionalVideosCarousel({
   }, [activeIdx]);
 
   const activeVideo = videos[activeIdx];
+  if (!activeVideo) return null;
 
   return (
     <section className="mt-12">

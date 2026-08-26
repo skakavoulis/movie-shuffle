@@ -271,7 +271,9 @@ export default function CastPage({
             )}
 
             {/* Videos */}
-            <AdditionalVideosCarousel videos={videos} />
+            {videos.length > 0 && (
+              <AdditionalVideosCarousel videos={videos} />
+            )}
 
             {/* Known For */}
             {knownFor.length > 0 && (
