@@ -11,15 +11,21 @@ export interface ExternalRatings {
   audienceScore: number | null;
   /** Metascore, out of 100. */
   metacritic: number | null;
+  imdbUrl?: string | null;
+  rtUrl?: string | null;
+  metacriticUrl?: string | null;
 }
 
 interface MDBListRating {
   source: string;
   value: number | null;
   votes?: number | null;
+  /** Path slug (RT, Metacritic) or a numeric popularity score (IMDb). */
+  url?: string | number | null;
 }
 
 interface MDBListResponse {
+  ids?: { imdb?: string | null };
   ratings?: MDBListRating[];
 }
 
@@ -31,6 +37,33 @@ function pick(ratings: MDBListRating[], ...sources: string[]) {
     if (hit) return hit;
   }
   return null;
+}
+
+/** MDBList stores RT/Metacritic slugs as `/m/jaws`; IMDb's `url` is a number. */
+function ratingPath(rating: MDBListRating | null): string | null {
+  const url = rating?.url;
+  return typeof url === "string" && url.startsWith("/") ? url : null;
+}
+
+function imdbTitleUrl(imdbId: string | null | undefined): string | null {
+  if (!imdbId || !/^tt\d+$/.test(imdbId)) return null;
+  return `https://www.imdb.com/title/${imdbId}`;
+}
+
+function rottenTomatoesUrl(path: string | null): string | null {
+  return path ? `https://www.rottentomatoes.com${path}` : null;
+}
+
+function metacriticTitleUrl(
+  path: string | null,
+  mediaType: "movie" | "tv",
+): string | null {
+  if (!path) return null;
+  if (path.startsWith("/movie/") || path.startsWith("/tv/")) {
+    return `https://www.metacritic.com${path}`;
+  }
+  const prefix = mediaType === "tv" ? "/tv" : "/movie";
+  return `https://www.metacritic.com${prefix}${path}`;
 }
 
 async function fetchExternalRatings(
@@ -49,14 +82,19 @@ async function fetchExternalRatings(
   const data = (await res.json()) as MDBListResponse;
   const ratings = data.ratings ?? [];
   const imdb = pick(ratings, "imdb");
+  const tomatoes = pick(ratings, "tomatoes");
+  const popcorn = pick(ratings, "popcorn", "tomatoesaudience");
+  const metacritic = pick(ratings, "metacritic");
 
   return {
     imdb: imdb?.value ?? null,
     imdbVotes: imdb?.votes ?? null,
-    tomatometer: pick(ratings, "tomatoes")?.value ?? null,
-    // MDBList renamed the audience source from `tomatoesaudience` to `popcorn`.
-    audienceScore: pick(ratings, "popcorn", "tomatoesaudience")?.value ?? null,
-    metacritic: pick(ratings, "metacritic")?.value ?? null,
+    tomatometer: tomatoes?.value ?? null,
+    audienceScore: popcorn?.value ?? null,
+    metacritic: metacritic?.value ?? null,
+    imdbUrl: imdbTitleUrl(data.ids?.imdb),
+    rtUrl: rottenTomatoesUrl(ratingPath(tomatoes) ?? ratingPath(popcorn)),
+    metacriticUrl: metacriticTitleUrl(ratingPath(metacritic), mediaType),
   };
 }
 

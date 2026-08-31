@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ExternalRatings as ExternalRatingsData } from "@/lib/ratings";
 
 interface Props {
@@ -6,6 +7,8 @@ interface Props {
 
 const PILL =
   "flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold";
+const PILL_LINK =
+  "hover:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-[filter]";
 const LABEL = "text-[10px] font-bold uppercase tracking-wider opacity-80";
 
 /** Rotten Tomatoes brands anything below 60 as "rotten" and drops the red badge. */
@@ -22,15 +25,60 @@ function metascoreTone(score: number) {
   return "bg-red-500/10 text-red-400";
 }
 
+function RatingPill({
+  href,
+  className,
+  label,
+  children,
+}: {
+  href: string | null | undefined;
+  className: string;
+  label: string;
+  children: ReactNode;
+}) {
+  const classes = href
+    ? `${PILL} ${PILL_LINK} ${className}`
+    : `${PILL} ${className}`;
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={classes}
+        aria-label={`${label} (opens in a new tab)`}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return <span className={classes}>{children}</span>;
+}
+
 export default function ExternalRatings({ ratings }: Props) {
   if (!ratings) return null;
 
-  const { imdb, imdbVotes, tomatometer, audienceScore, metacritic } = ratings;
+  const {
+    imdb,
+    imdbVotes,
+    tomatometer,
+    audienceScore,
+    metacritic,
+    imdbUrl,
+    rtUrl,
+    metacriticUrl,
+  } = ratings;
 
   return (
     <>
       {imdb != null && (
-        <span className={`${PILL} bg-[#f5c518]/10 text-[#f5c518]`}>
+        <RatingPill
+          href={imdbUrl}
+          className="bg-[#f5c518]/10 text-[#f5c518]"
+          label="IMDb"
+        >
           <span className={LABEL}>IMDb</span>
           {imdb.toFixed(1)}
           {imdbVotes ? (
@@ -38,25 +86,37 @@ export default function ExternalRatings({ ratings }: Props) {
               ({imdbVotes.toLocaleString()})
             </span>
           ) : null}
-        </span>
+        </RatingPill>
       )}
       {tomatometer != null && (
-        <span className={`${PILL} ${freshnessTone(tomatometer)}`}>
+        <RatingPill
+          href={rtUrl}
+          className={freshnessTone(tomatometer)}
+          label="Rotten Tomatoes critics"
+        >
           <span className={LABEL}>RT Critics</span>
           {tomatometer}%
-        </span>
+        </RatingPill>
       )}
       {audienceScore != null && (
-        <span className={`${PILL} ${freshnessTone(audienceScore)}`}>
+        <RatingPill
+          href={rtUrl}
+          className={freshnessTone(audienceScore)}
+          label="Rotten Tomatoes audience"
+        >
           <span className={LABEL}>RT Audience</span>
           {audienceScore}%
-        </span>
+        </RatingPill>
       )}
       {metacritic != null && (
-        <span className={`${PILL} ${metascoreTone(metacritic)}`}>
+        <RatingPill
+          href={metacriticUrl}
+          className={metascoreTone(metacritic)}
+          label="Metacritic"
+        >
           <span className={LABEL}>Metacritic</span>
           {metacritic}
-        </span>
+        </RatingPill>
       )}
     </>
   );
