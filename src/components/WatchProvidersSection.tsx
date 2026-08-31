@@ -36,7 +36,6 @@ function ProviderGroup({
             <a
               key={p.provider_id}
               href={href}
-              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-card border border-border hover:border-white/30 hover:bg-bg-hover transition-colors group"
             >
