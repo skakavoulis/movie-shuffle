@@ -1,7 +1,5 @@
 import { config } from "./config";
-import { cached } from "./cache";
-
-const RATINGS_TTL_SECONDS = 86_400; // 1 day, matching the title page revalidation
+import { cachedExternalRatings } from "./ratingsCache";
 
 export interface ExternalRatings {
   /** Out of 10. */
@@ -74,11 +72,7 @@ export async function getExternalRatings(
   if (!config.mdblist.apiKey) return null;
 
   try {
-    return await cached(
-      `ratings:${mediaType}:${tmdbId}`,
-      () => fetchExternalRatings(mediaType, tmdbId),
-      RATINGS_TTL_SECONDS,
-    );
+    return await cachedExternalRatings(mediaType, tmdbId, fetchExternalRatings);
   } catch {
     return null;
   }
