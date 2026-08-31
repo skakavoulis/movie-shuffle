@@ -1,6 +1,6 @@
 {
   "name": "movie-shuffle",
-  "version": "0.9.1",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "predev": "supabase db push",
