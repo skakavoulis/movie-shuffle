@@ -585,6 +585,14 @@ export interface TMDBMultiSearchResult {
   release_date?: string;
   first_air_date?: string;
   genre_ids?: number[];
+  profile_path?: string | null;
+  known_for_department?: string;
+  known_for?: {
+    id: number;
+    media_type: "movie" | "tv";
+    title?: string;
+    name?: string;
+  }[];
 }
 
 interface TMDBMultiSearchResponse {
@@ -646,4 +654,52 @@ export function searchResultToMediaItem(
     };
   }
   return null;
+}
+
+export type PersonItem = {
+  id: number;
+  name: string;
+  profile_path: string | null;
+  department: string;
+  knownFor: string[];
+  popularity?: number;
+  href: string;
+  mediaType: "person";
+};
+
+export type SearchItem = MediaItem | PersonItem;
+
+export function isPersonItem(item: SearchItem): item is PersonItem {
+  return item.mediaType === "person";
+}
+
+export function searchResultToPersonItem(
+  r: TMDBMultiSearchResult,
+): PersonItem | null {
+  if (r.media_type !== "person") return null;
+  const name = r.name ?? "";
+  if (!name) return null;
+
+  return {
+    id: r.id,
+    name,
+    profile_path: r.profile_path ?? null,
+    department: r.known_for_department ?? "",
+    knownFor: (r.known_for ?? [])
+      .map((credit) => credit.title ?? credit.name ?? "")
+      .filter(Boolean)
+      .slice(0, 3),
+    popularity: r.popularity,
+    href: personHref({ id: r.id, name }),
+    mediaType: "person",
+  };
+}
+
+/** Multi-search rows for the autocomplete dropdown: titles plus cast members. */
+export function searchResultToSearchItem(
+  r: TMDBMultiSearchResult,
+): SearchItem | null {
+  if (r.media_type === "person") return searchResultToPersonItem(r);
+  const item = searchResultToMediaItem(r);
+  return item ? compactMediaItemForGrid(item) : null;
 }

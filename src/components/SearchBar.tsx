@@ -2,14 +2,19 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
-import { posterUrl, type MediaItem } from "@/lib/tmdb";
+import {
+  posterUrl,
+  profileUrl,
+  isPersonItem,
+  type SearchItem,
+} from "@/lib/tmdb";
 
 const DEBOUNCE_MS = 500;
 
 export default function SearchBar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MediaItem[]>([]);
+  const [results, setResults] = useState<SearchItem[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -27,7 +32,7 @@ export default function SearchBar() {
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) throw new Error();
-      const data: MediaItem[] = await res.json();
+      const data: SearchItem[] = await res.json();
       setResults(data.slice(0, 8));
       setOpen(true);
       setActiveIdx(-1);
@@ -137,17 +142,71 @@ export default function SearchBar() {
         <div className="absolute top-full left-0 right-0 mt-2 bg-bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50 animate-in">
           <ul role="listbox">
             {results.map((item, i) => {
+              const rowClass = `flex items-center gap-3 px-4 py-3 transition-colors ${
+                i === activeIdx ? "bg-bg-hover" : "hover:bg-bg-hover"
+              }`;
+
+              if (isPersonItem(item)) {
+                const avatar = profileUrl(item.profile_path, "w185");
+                const roleLabel =
+                  !item.department || item.department === "Acting"
+                    ? "Cast"
+                    : item.department;
+                return (
+                  <li
+                    key={`person-${item.id}`}
+                    role="option"
+                    aria-selected={i === activeIdx}
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={rowClass}
+                    >
+                      <div className="w-10 h-14 flex-shrink-0 flex items-center justify-center">
+                        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-bg-primary">
+                          {avatar ? (
+                            <Image
+                              src={avatar}
+                              alt={item.name}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-sm font-bold text-text-muted">
+                              {item.name[0]}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">
+                          {item.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                          <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 flex-shrink-0">
+                            {roleLabel}
+                          </span>
+                          {item.knownFor.length > 0 && (
+                            <span className="text-xs text-text-muted truncate">
+                              {item.knownFor.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              }
+
               const year = item.releaseDate?.split("-")[0];
               return (
                 <li key={`${item.mediaType}-${item.id}`} role="option" aria-selected={i === activeIdx}>
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                      i === activeIdx
-                        ? "bg-bg-hover"
-                        : "hover:bg-bg-hover"
-                    }`}
+                    className={rowClass}
                   >
                     <div className="relative w-10 h-14 flex-shrink-0 rounded overflow-hidden bg-bg-primary">
                       <Image
