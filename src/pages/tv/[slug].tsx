@@ -17,10 +17,6 @@ import {
   personHref,
   type TMDBTVShowDetails,
 } from "@/lib/tmdb";
-import {
-  getExternalRatings,
-  type ExternalRatings as ExternalRatingsData,
-} from "@/lib/ratings";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -31,11 +27,10 @@ import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
 import SeasonsSection from "@/components/SeasonsSection";
-import ExternalRatings from "@/components/ExternalRatings";
+import TitleExternalRatings from "@/components/TitleExternalRatings";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
-  ratings: ExternalRatingsData | null;
 }
 
 const REVALIDATE_SECONDS = 86_400; // 1 day
@@ -70,10 +65,7 @@ export const getStaticProps: GetStaticProps<TVPageProps> = async ({
       };
     }
 
-    // Resolved after the redirect check so non-canonical URLs don't burn quota.
-    const ratings = await getExternalRatings("tv", show.id);
-
-    return { props: { show, ratings }, revalidate: REVALIDATE_SECONDS };
+    return { props: { show }, revalidate: REVALIDATE_SECONDS };
   } catch {
     return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
   }
@@ -81,7 +73,6 @@ export const getStaticProps: GetStaticProps<TVPageProps> = async ({
 
 export default function TVShowPage({
   show,
-  ratings,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
@@ -212,7 +203,7 @@ export default function TVShowPage({
                   </span>
                 </span>
               )}
-              <ExternalRatings ratings={ratings} />
+              <TitleExternalRatings mediaType="tv" mediaId={show.id} />
             </div>
             <div className="flex flex-wrap items-center gap-3 mt-4">
               {year && (

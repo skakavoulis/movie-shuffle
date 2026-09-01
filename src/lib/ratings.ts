@@ -101,7 +101,7 @@ async function fetchExternalRatings(
 /**
  * Resolves to null instead of throwing so that an unset key, a spent daily
  * quota, or an MDBList outage degrades to hiding the pills rather than
- * failing the title page render.
+ * erroring the request.
  */
 export async function getExternalRatings(
   mediaType: "movie" | "tv",
