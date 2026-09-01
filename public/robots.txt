@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Crawl-delay: 10
+
+# Personalized or auth-gated pages — nothing useful to index.
+Disallow: /auth
+Disallow: /profile
+Disallow: /my-movies
+Disallow: /my-tv-shows
+Disallow: /watchlist
+
+# Unbounded query-string spaces.
+Disallow: /api/
+Disallow: /search

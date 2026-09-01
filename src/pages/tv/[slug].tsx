@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import type {
-  GetStaticPaths,
-  GetStaticProps,
-  InferGetStaticPropsType,
+  GetServerSideProps,
+  InferGetServerSidePropsType,
 } from "next";
 import {
   getTVShowDetails,
@@ -17,6 +16,7 @@ import {
   personHref,
   type TMDBTVShowDetails,
 } from "@/lib/tmdb";
+import { CDN_LONG } from "@/lib/cdnCache";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -33,17 +33,14 @@ interface TVPageProps {
   show: TMDBTVShowDetails;
 }
 
-const REVALIDATE_SECONDS = 86_400; // 1 day
-const NOT_FOUND_REVALIDATE_SECONDS = 3600; // retry TMDB failures within the hour
-
-/** Titles are generated on first request rather than at build time. */
-export const getStaticPaths: GetStaticPaths = async () => ({
-  paths: [],
-  fallback: "blocking",
-});
-
-export const getStaticProps: GetStaticProps<TVPageProps> = async ({
+/**
+ * Rendered per request and cached at the CDN rather than with ISR: the slug
+ * space is unbounded, so ISR would write a new cache entry for every URL a
+ * crawler invents.
+ */
+export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
   params,
+  res,
 }) => {
   const slug = params?.slug as string;
   const showId = parseTVIdFromSlug(slug);
@@ -65,15 +62,16 @@ export const getStaticProps: GetStaticProps<TVPageProps> = async ({
       };
     }
 
-    return { props: { show }, revalidate: REVALIDATE_SECONDS };
+    res.setHeader("Cache-Control", CDN_LONG);
+    return { props: { show } };
   } catch {
-    return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
+    return { notFound: true };
   }
 };
 
 export default function TVShowPage({
   show,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
   const tmdbRating = show.vote_average?.toFixed(1);

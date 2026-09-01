@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import type {
-  GetStaticPaths,
-  GetStaticProps,
-  InferGetStaticPropsType,
+  GetServerSideProps,
+  InferGetServerSidePropsType,
 } from "next";
 import {
   getMovieDetails,
@@ -17,6 +16,7 @@ import {
   personHref,
   type TMDBMovieDetails,
 } from "@/lib/tmdb";
+import { CDN_LONG } from "@/lib/cdnCache";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -32,17 +32,14 @@ interface MoviePageProps {
   movie: TMDBMovieDetails;
 }
 
-const REVALIDATE_SECONDS = 86_400; // 1 day
-const NOT_FOUND_REVALIDATE_SECONDS = 3600; // retry TMDB failures within the hour
-
-/** Titles are generated on first request rather than at build time. */
-export const getStaticPaths: GetStaticPaths = async () => ({
-  paths: [],
-  fallback: "blocking",
-});
-
-export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
+/**
+ * Rendered per request and cached at the CDN rather than with ISR: the slug
+ * space is unbounded, so ISR would write a new cache entry for every URL a
+ * crawler invents.
+ */
+export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
   params,
+  res,
 }) => {
   const slug = params?.slug as string;
   const movieId = parseMovieIdFromSlug(slug);
@@ -64,9 +61,10 @@ export const getStaticProps: GetStaticProps<MoviePageProps> = async ({
       };
     }
 
-    return { props: { movie }, revalidate: REVALIDATE_SECONDS };
+    res.setHeader("Cache-Control", CDN_LONG);
+    return { props: { movie } };
   } catch {
-    return { notFound: true, revalidate: NOT_FOUND_REVALIDATE_SECONDS };
+    return { notFound: true };
   }
 };
 
@@ -84,7 +82,7 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
-}: InferGetStaticPropsType<typeof getStaticProps>) {
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
   const tmdbRating = movie.vote_average?.toFixed(1);
