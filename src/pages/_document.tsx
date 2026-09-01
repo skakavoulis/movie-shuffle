@@ -15,6 +15,8 @@ export default function Document() {
           content="Discover random movies with a streaming-style interface."
         />
         <meta property="og:type" content="website" />
+        <meta name="theme-color" content="#0b0f19" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
