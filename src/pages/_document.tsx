@@ -5,16 +5,9 @@ export default function Document() {
     <Html lang="en">
       <Head>
         <meta charSet="utf-8" />
-        <meta
-          name="description"
-          content="JustPickAMovie — Discover random movies with a beautiful streaming-style interface. Powered by TMDB."
-        />
-        <meta property="og:title" content="JustPickAMovie" />
-        <meta
-          property="og:description"
-          content="Discover random movies with a streaming-style interface."
-        />
-        <meta property="og:type" content="website" />
+        {/* Description and og:title/description/type are set per page; tags
+            here can't be overridden by next/head and would be duplicated. */}
+        <meta property="og:site_name" content="JustPickAMovie" />
         <meta name="theme-color" content="#0b0f19" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link
