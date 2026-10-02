@@ -4,9 +4,16 @@ import { backdropUrl, type MediaItem } from "@/lib/tmdb";
 
 interface HeroBannerProps {
   item: MediaItem;
+  /**
+   * Page-level heading rendered above the title. When set it becomes the
+   * page's h1 and the title drops to an h2, so a randomly picked title never
+   * stands in for what the page is about.
+   */
+  eyebrow?: string;
 }
 
-export default function HeroBanner({ item }: HeroBannerProps) {
+export default function HeroBanner({ item, eyebrow }: HeroBannerProps) {
+  const TitleTag = eyebrow ? "h2" : "h1";
   const bgUrl = backdropUrl(item.backdrop_path, "original");
   const year = item.releaseDate?.split("-")[0] ?? "";
   const rating = item.vote_average?.toFixed(1) ?? "";
@@ -30,9 +37,14 @@ export default function HeroBanner({ item }: HeroBannerProps) {
       <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/80 via-transparent to-transparent" />
 
       <div className="relative z-10 flex flex-col justify-end h-full px-6 md:px-12 pb-16 max-w-3xl">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white drop-shadow-lg">
+        {eyebrow && (
+          <h1 className="mb-3 text-xs md:text-sm font-semibold uppercase tracking-widest text-accent drop-shadow">
+            {eyebrow}
+          </h1>
+        )}
+        <TitleTag className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white drop-shadow-lg">
           {item.title}
-        </h1>
+        </TitleTag>
 
         <div className="flex items-center gap-4 mt-4 text-sm md:text-base text-text-secondary">
           {rating && (
@@ -53,6 +65,7 @@ export default function HeroBanner({ item }: HeroBannerProps) {
         <div className="flex gap-3 mt-6">
           <Link
             href={item.href}
+            aria-label={`Details for ${item.title}`}
             className="flex items-center gap-2 px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover text-white font-semibold transition-colors shadow-lg shadow-accent/20"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

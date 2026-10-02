@@ -522,7 +522,11 @@ export default function DiscoverPage() {
   return (
     <Layout>
       <Head>
-        <title>Discover — JustPickAMovie</title>
+        <title>Discover Movies by Swiping — JustPickAMovie</title>
+        <meta
+          name="description"
+          content="Swipe through movie and TV suggestions filtered by genre, year, rating and streaming service. Skip or like until you find something to watch."
+        />
       </Head>
 
       <div className="flex flex-col items-center h-[100dvh] px-4 pt-20 pb-6 overflow-hidden">

@@ -68,7 +68,11 @@ export default function TVShows({
   return (
     <Layout>
       <Head>
-        <title>TV Shows — JustPickAMovie</title>
+        <title>Random TV Show Picks — Find a Series to Watch | JustPickAMovie</title>
+        <meta
+          name="description"
+          content="Can't decide what to binge next? Get random TV show picks from trending, top-rated and currently airing series, and see where to stream them."
+        />
       </Head>
 
       {error ? (
