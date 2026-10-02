@@ -43,88 +43,74 @@ export default function HomeAboutSection() {
   return (
     <section
       aria-labelledby="home-about-heading"
-      className="px-6 md:px-12 py-12 mt-6 border-t border-border"
+      className="mt-10 border-t border-white/10 bg-bg-secondary/40 px-6 py-16 md:px-12 md:py-20"
     >
-      <div className="max-w-5xl">
-        <h2
-          id="home-about-heading"
-          className="text-2xl md:text-3xl font-bold text-text-primary"
-        >
-          A random movie generator for when you can&apos;t decide
-        </h2>
-        <p className="mt-4 text-text-secondary leading-relaxed">
-          Endless scrolling through streaming menus is the fastest way to ruin
-          movie night. JustPickAMovie picks for you: a fresh, random selection
-          of films from today&apos;s{" "}
-          <strong className="text-text-primary font-semibold">
-            trending movies
-          </strong>
-          , all-time{" "}
-          <strong className="text-text-primary font-semibold">
-            top-rated classics
-          </strong>{" "}
-          and{" "}
-          <strong className="text-text-primary font-semibold">
-            new releases in theaters
-          </strong>
-          . Prefer series? Browse random{" "}
-          <Link href="/tv-shows" className="text-accent hover:underline">
-            TV show picks
-          </Link>
-          , or let{" "}
-          <Link href="/discover" className="text-accent hover:underline">
-            Discover
-          </Link>{" "}
-          find something that matches your taste.
-        </p>
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">
+              Your next great watch
+            </p>
+            <h2
+              id="home-about-heading"
+              className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-text-primary md:text-5xl"
+            >
+              Stop scrolling. Start watching.
+            </h2>
+          </div>
+          <div>
+            <p className="text-base leading-8 text-text-secondary md:text-lg">
+              Movie night should feel like a choice, not a chore. JustPickAMovie
+              turns the endless streaming shelf into a short list of genuinely
+              good ideas, from trending hits to top-rated classics and new
+              releases.
+            </p>
+            <Link
+              href="/discover"
+              className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-text-primary transition-colors hover:text-accent"
+            >
+              Find your next watch
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
 
-        <ol className="mt-8 grid gap-4 md:grid-cols-3">
+        <ol className="mt-14 grid gap-3 md:grid-cols-3">
           {STEPS.map((step, i) => (
             <li
               key={step.title}
-              className="bg-bg-card border border-border rounded-xl p-5"
+              className="group rounded-2xl border border-white/10 bg-bg-card/70 p-6 transition-colors hover:border-accent/60 hover:bg-bg-card"
             >
-              <span className="text-xs font-semibold uppercase tracking-wider text-accent">
-                Step {i + 1}
-              </span>
-              <h3 className="mt-1 text-lg font-semibold text-text-primary">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-sm text-accent">0{i + 1}</span>
+                <span className="text-text-muted transition-transform group-hover:translate-x-1" aria-hidden="true">↗</span>
+              </div>
+              <h3 className="mt-10 text-xl font-semibold text-text-primary">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+              <p className="mt-3 text-sm leading-7 text-text-secondary">
                 {step.body}
               </p>
             </li>
           ))}
         </ol>
 
-        <h2 className="mt-12 text-xl md:text-2xl font-bold text-text-primary">
-          Frequently asked questions
-        </h2>
-        <div className="mt-4 divide-y divide-border border-y border-border">
-          {HOME_FAQ.map((faq) => (
-            <details key={faq.question} className="group py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-text-primary">
-                <h3 className="text-base">{faq.question}</h3>
-                <svg
-                  className="w-5 h-5 shrink-0 text-text-muted transition-transform group-open:rotate-180"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </summary>
-              <p className="mt-3 text-sm text-text-secondary leading-relaxed">
-                {faq.answer}
-              </p>
-            </details>
-          ))}
+        <div className="mt-20 max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-muted">Good to know</p>
+          <h2 className="mt-3 text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
+            Frequently asked questions
+          </h2>
+          <div className="mt-6 divide-y divide-white/10 border-y border-white/10">
+            {HOME_FAQ.map((faq) => (
+              <details key={faq.question} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-text-primary">
+                  <h3 className="text-base">{faq.question}</h3>
+                  <span className="text-xl font-light text-text-muted transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-text-secondary">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </div>
     </section>
