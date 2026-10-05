@@ -25,7 +25,7 @@ import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
-import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
+import LazyVideosCarousel from "@/components/LazyVideosCarousel";
 import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 
@@ -81,16 +81,6 @@ export default function TVShowPage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const showVideos = [
-    ...(trailer ? [trailer] : []),
-    ...(show.videos?.results ?? []).filter(
-      (v) =>
-        v.site === "YouTube" &&
-        v.type !== "Trailer" &&
-        v.type !== "Teaser" &&
-        v.id !== trailer?.id,
-    ),
-  ];
   const similar = (show.similar?.results ?? [])
     .slice(0, 15)
     .map(tvShowToMediaItem);
@@ -323,9 +313,11 @@ export default function TVShowPage({
         </div>
 
         {/* Videos Carousel */}
-        {showVideos.length > 0 && (
-          <AdditionalVideosCarousel videos={showVideos} paused={trailerOpen} />
-        )}
+        <LazyVideosCarousel
+          key={show.id}
+          src={`/api/title-videos?mediaType=tv&id=${show.id}`}
+          paused={trailerOpen}
+        />
 
         {/* Where to watch */}
         <TitleWatchProviders

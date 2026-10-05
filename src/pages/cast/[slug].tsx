@@ -15,13 +15,10 @@ import {
 } from "@/lib/tmdb";
 import { CDN_LONG } from "@/lib/cdnCache";
 import Layout from "@/components/Layout";
-import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
-import { searchYouTubeVideos } from "@/lib/youtube";
-import type { TMDBVideo } from "@/lib/tmdb";
+import LazyVideosCarousel from "@/components/LazyVideosCarousel";
 
 interface CastPageProps {
   person: TMDBPersonDetails;
-  videos: TMDBVideo[];
 }
 
 export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
@@ -48,19 +45,8 @@ export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
       };
     }
 
-    const ytResults = await searchYouTubeVideos(
-      `${person.name} ${person.known_for_department}`,
-    );
-    const videos: TMDBVideo[] = ytResults.map((v) => ({
-      id: v.id,
-      key: v.id,
-      name: v.title,
-      site: "YouTube",
-      type: "Video",
-    }));
-
     res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { person, videos } };
+    return { props: { person } };
   } catch {
     return { notFound: true };
   }
@@ -85,7 +71,6 @@ function formatDate(dateStr: string) {
 
 export default function CastPage({
   person,
-  videos,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -271,9 +256,10 @@ export default function CastPage({
             )}
 
             {/* Videos */}
-            {videos.length > 0 && (
-              <AdditionalVideosCarousel videos={videos} />
-            )}
+            <LazyVideosCarousel
+              key={person.id}
+              src={`/api/cast-videos?id=${person.id}`}
+            />
 
             {/* Known For */}
             {knownFor.length > 0 && (

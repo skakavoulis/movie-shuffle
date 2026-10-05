@@ -25,7 +25,7 @@ import LikeButton from "@/components/LikeButton";
 import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
-import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
+import LazyVideosCarousel from "@/components/LazyVideosCarousel";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 
 interface MoviePageProps {
@@ -92,16 +92,6 @@ export default function MoviePage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const movieVideos = [
-    ...(trailer ? [trailer] : []),
-    ...(movie.videos?.results ?? []).filter(
-      (v) =>
-        v.site === "YouTube" &&
-        v.type !== "Trailer" &&
-        v.type !== "Teaser" &&
-        v.id !== trailer?.id,
-    ),
-  ];
   const similar = (movie.similar?.results ?? [])
     .slice(0, 15)
     .map(movieToMediaItem);
@@ -316,9 +306,11 @@ export default function MoviePage({
         </div>
 
         {/* Movie Videos Carousel */}
-        {movieVideos.length > 0 && (
-          <AdditionalVideosCarousel videos={movieVideos} paused={trailerOpen} />
-        )}
+        <LazyVideosCarousel
+          key={movie.id}
+          src={`/api/title-videos?mediaType=movie&id=${movie.id}`}
+          paused={trailerOpen}
+        />
 
         {/* Where to watch */}
         <TitleWatchProviders
