@@ -301,6 +301,24 @@ export async function getTrendingTVShows() {
   );
 }
 
+/** The trailer (or teaser) first, then the title's other YouTube videos. */
+export function orderTitleVideos(videos: TMDBVideo[] = []): TMDBVideo[] {
+  const trailer = videos.find(
+    (v) =>
+      v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
+  );
+  return [
+    ...(trailer ? [trailer] : []),
+    ...videos.filter(
+      (v) =>
+        v.site === "YouTube" &&
+        v.type !== "Trailer" &&
+        v.type !== "Teaser" &&
+        v.id !== trailer?.id,
+    ),
+  ];
+}
+
 export async function getTVShowDetails(id: number) {
   return cached(`tv:${id}`, () =>
     tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
