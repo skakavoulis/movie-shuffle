@@ -1,3 +1,6 @@
+import { cached } from "@/lib/cache";
+import type { TMDBVideo } from "@/lib/tmdb";
+
 export interface YouTubeSearchResult {
   id: string;
   title: string;
@@ -49,5 +52,34 @@ export async function searchYouTubeVideos(
     return videos;
   } catch {
     return [];
+  }
+}
+
+class NoVideosError extends Error {}
+
+/**
+ * Cached YouTube search, shaped for the videos carousel. An empty result
+ * usually means the scrape failed rather than that nothing matched, so it is
+ * returned but kept out of the cache to be retried on the next request.
+ */
+export async function getYouTubeVideos(
+  cacheKey: string,
+  query: string,
+): Promise<TMDBVideo[]> {
+  try {
+    return await cached(cacheKey, async () => {
+      const results = await searchYouTubeVideos(query);
+      if (results.length === 0) throw new NoVideosError();
+      return results.map((v) => ({
+        id: v.id,
+        key: v.id,
+        name: v.title,
+        site: "YouTube",
+        type: "Video",
+      }));
+    });
+  } catch (e) {
+    if (e instanceof NoVideosError) return [];
+    throw e;
   }
 }
