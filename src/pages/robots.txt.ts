@@ -15,6 +15,9 @@ Disallow: /my-movies
 Disallow: /my-tv-shows
 Disallow: /watchlist
 
+# Person pages: a very large URL space that crawlers walk exhaustively.
+Disallow: /cast/
+
 # Unbounded query-string spaces.
 Disallow: /api/
 Disallow: /search
