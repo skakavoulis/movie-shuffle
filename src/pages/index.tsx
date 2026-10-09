@@ -5,6 +5,7 @@ import {
   getTopRatedMovies,
   getNowPlayingMovies,
   getTrendingMovies,
+  getPersonMovieCredits,
   sampleMovies,
   movieToMediaItem,
   backdropUrl,
@@ -12,10 +13,14 @@ import {
   type MediaItem,
 } from "@/lib/tmdb";
 import { SITE_NAME, siteUrl } from "@/lib/site";
+import { greatCreatorsConfig } from "@/lib/greatCreators";
 import Layout from "@/components/Layout";
 import HeroBanner from "@/components/HeroBanner";
 import CarouselSection from "@/components/CarouselSection";
 import DiscoverCTASection from "@/components/DiscoverCTASection";
+import GreatCreatorsPromoSection, {
+  type PromoCreator,
+} from "@/components/GreatCreatorsPromoSection";
 import NewsHeadlinesSection from "@/components/NewsHeadlinesSection";
 import HomeAboutSection, { HOME_FAQ } from "@/components/HomeAboutSection";
 
@@ -26,6 +31,7 @@ const PAGE_DESCRIPTION =
 interface HomeProps {
   hero: MediaItem | null;
   sections: { title: string; items: MediaItem[] }[];
+  promoCreators: PromoCreator[];
   siteUrl: string;
   error: string | null;
 }
@@ -69,14 +75,39 @@ function buildStructuredData(
   };
 }
 
+const PROMO_CREATOR_COUNT = 7;
+
+/** A different handful of directors each rebuild; never fails the homepage. */
+async function getPromoCreators(): Promise<PromoCreator[]> {
+  const picks = [...greatCreatorsConfig.creators]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, PROMO_CREATOR_COUNT);
+  const results = await Promise.allSettled(
+    picks.map(async (creator) => {
+      const person = await getPersonMovieCredits(creator.tmdbId);
+      return {
+        id: person.id,
+        name: creator.name,
+        profile_path: person.profile_path,
+      };
+    }),
+  );
+  return results
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => r.value)
+    .filter((c) => c.profile_path);
+}
+
 export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   try {
-    const [popular, topRated, nowPlaying, trending] = await Promise.all([
-      getPopularMovies(),
-      getTopRatedMovies(),
-      getNowPlayingMovies(),
-      getTrendingMovies(),
-    ]);
+    const [popular, topRated, nowPlaying, trending, promoCreators] =
+      await Promise.all([
+        getPopularMovies(),
+        getTopRatedMovies(),
+        getNowPlayingMovies(),
+        getTrendingMovies(),
+        getPromoCreators(),
+      ]);
 
     const allForHero = [...popular.results, ...trending.results].filter(
       (m) => m.backdrop_path,
@@ -108,6 +139,7 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
       props: {
         hero: heroMovie ? movieToMediaItem(heroMovie) : null,
         sections,
+        promoCreators,
         siteUrl: siteUrl(),
         error: null,
       },
@@ -116,7 +148,13 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to fetch movies";
     return {
-      props: { hero: null, sections: [], siteUrl: siteUrl(), error: message },
+      props: {
+        hero: null,
+        sections: [],
+        promoCreators: [],
+        siteUrl: siteUrl(),
+        error: message,
+      },
       revalidate: 3600,
     };
   }
@@ -125,6 +163,7 @@ export const getStaticProps: GetStaticProps<HomeProps> = async () => {
 export default function Home({
   hero,
   sections,
+  promoCreators,
   siteUrl: origin,
   error,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
@@ -203,7 +242,12 @@ export default function Home({
               <div key={section.title}>
                 <CarouselSection title={section.title} items={section.items} />
                 {index === 0 && <DiscoverCTASection />}
-                {index === 1 && <NewsHeadlinesSection />}
+                {index === 1 && (
+                  <>
+                    <GreatCreatorsPromoSection creators={promoCreators} />
+                    <NewsHeadlinesSection />
+                  </>
+                )}
               </div>
             ))}
             <HomeAboutSection />
