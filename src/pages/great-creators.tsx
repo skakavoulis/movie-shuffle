@@ -31,7 +31,8 @@ interface GreatCreatorsProps {
 
 async function buildFloor(creator: GreatCreator): Promise<CreatorFloor> {
   const person = await getPersonMovieCredits(creator.tmdbId);
-  const { minVoteCount, moviesPerCreator } = greatCreatorsConfig;
+  const { moviesPerCreator } = greatCreatorsConfig;
+  const minVoteCount = creator.minVoteCount ?? greatCreatorsConfig.minVoteCount;
 
   const directed = (person.movie_credits?.crew ?? []).filter(
     (c) => c.job === "Director" && !c.video && c.vote_count >= minVoteCount,
@@ -145,7 +146,7 @@ export default function GreatCreators({
   floors,
   error,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const { title, intro, source } = greatCreatorsConfig;
+  const { title, intro, sources } = greatCreatorsConfig;
   useRestoreLastCreator();
 
   return (
@@ -154,7 +155,7 @@ export default function GreatCreators({
         <title>{`${title} — The Greatest Film Directors and Their Best Movies | JustPickAMovie`}</title>
         <meta
           name="description"
-          content="Browse the most acclaimed film directors of all time, from Hitchcock to Kurosawa, each with their best movies ranked by rating."
+          content="Browse the most acclaimed film directors of all time, from Hitchcock and Kurosawa to Wong Kar-wai and Bong Joon-ho, each with their best movies ranked by rating."
         />
       </Head>
 
@@ -207,14 +208,9 @@ export default function GreatCreators({
                         </div>
                       )}
                     </div>
-                    <div className="md:mt-3">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-accent">
-                        #{i + 1}
-                      </p>
-                      <h2 className="text-lg font-bold text-text-primary group-hover:text-white transition-colors">
-                        {floor.name}
-                      </h2>
-                    </div>
+                    <h2 className="md:mt-3 text-lg font-bold text-text-primary group-hover:text-white transition-colors">
+                      {floor.name}
+                    </h2>
                   </Link>
 
                   <div className="min-w-0 flex-1">
@@ -225,15 +221,20 @@ export default function GreatCreators({
             </div>
 
             <p className="mt-6 text-xs text-text-muted">
-              Directors ranked by{" "}
-              <a
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-text-secondary"
-              >
-                {source.name}
-              </a>
+              Directors selected from{" "}
+              {sources.map((source, i) => (
+                <span key={source.url}>
+                  {i > 0 && " and "}
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-text-secondary"
+                  >
+                    {source.name}
+                  </a>
+                </span>
+              ))}
               . Films ordered by TMDB rating.
             </p>
           </>
