@@ -566,6 +566,30 @@ export async function getPersonDetails(id: number) {
   );
 }
 
+export interface TMDBPersonMovieCrewCredit extends TMDBMovie {
+  job: string;
+  vote_count: number;
+  /** True for direct-to-video releases such as music video compilations. */
+  video: boolean;
+}
+
+export interface TMDBPersonMovieCredits {
+  id: number;
+  name: string;
+  profile_path: string | null;
+  movie_credits?: {
+    crew: TMDBPersonMovieCrewCredit[];
+  };
+}
+
+export async function getPersonMovieCredits(id: number) {
+  return cached(`person:${id}:movie_credits`, () =>
+    tmdbFetch<TMDBPersonMovieCredits>(`/person/${id}`, {
+      append_to_response: "movie_credits",
+    }),
+  );
+}
+
 export function personSlug(person: { id: number; name: string }) {
   const name = person.name
     .toLowerCase()

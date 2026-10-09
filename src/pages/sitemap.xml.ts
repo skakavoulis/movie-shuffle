@@ -11,7 +11,7 @@ import {
 import { CDN_LONG } from "@/lib/cdnCache";
 import { siteUrl } from "@/lib/site";
 
-const STATIC_PATHS = ["/", "/tv-shows", "/discover"];
+const STATIC_PATHS = ["/", "/tv-shows", "/discover", "/great-creators"];
 
 function escapeXml(value: string) {
   return value

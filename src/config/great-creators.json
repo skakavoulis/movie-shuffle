@@ -1,0 +1,22 @@
+[
+  {"tmdbId": 2636, "name": "Alfred Hitchcock"},
+  {"tmdbId": 40, "name": "Orson Welles"},
+  {"tmdbId": 240, "name": "Stanley Kubrick"},
+  {"tmdbId": 4415, "name": "Federico Fellini"},
+  {"tmdbId": 1776, "name": "Francis Ford Coppola"},
+  {"tmdbId": 3776, "name": "Jean-Luc Godard"},
+  {"tmdbId": 6648, "name": "Ingmar Bergman"},
+  {"tmdbId": 5026, "name": "Akira Kurosawa"},
+  {"tmdbId": 11528, "name": "Jean Renoir"},
+  {"tmdbId": 8500, "name": "John Ford"},
+  {"tmdbId": 95501, "name": "Yasujirō Ozu"},
+  {"tmdbId": 1032, "name": "Martin Scorsese"},
+  {"tmdbId": 8452, "name": "Andrei Tarkovsky"},
+  {"tmdbId": 793, "name": "Luis Buñuel"},
+  {"tmdbId": 13848, "name": "Charlie Chaplin"},
+  {"tmdbId": 10346, "name": "Robert Bresson"},
+  {"tmdbId": 3146, "name": "Billy Wilder"},
+  {"tmdbId": 11572, "name": "Carl Theodor Dreyer"},
+  {"tmdbId": 9076, "name": "F. W. Murnau"},
+  {"tmdbId": 11435, "name": "Howard Hawks"}
+]

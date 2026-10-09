@@ -52,6 +52,7 @@ export default function Layout({ children }: LayoutProps) {
     { href: "/", label: "Movies" },
     { href: "/tv-shows", label: "TV Shows" },
     { href: "/discover", label: "Discover" },
+    { href: "/great-creators", label: "Great Creators" },
   ];
 
   return (
@@ -66,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
               >
                 JustPickAMovie
               </Link>
-              <div className="hidden min-[1160px]:flex items-center gap-6">
+              <div className="hidden min-[1280px]:flex items-center gap-6">
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
@@ -85,12 +86,12 @@ export default function Layout({ children }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden min-[1160px]:block">
+              <div className="hidden min-[1280px]:block">
                 <SearchBar />
               </div>
 
               {/* Desktop user menu */}
-              <div className="hidden min-[1160px]:block">
+              <div className="hidden min-[1280px]:block">
                 {user ? (
                   <div ref={menuRef} className="relative">
                     <button
@@ -179,7 +180,7 @@ export default function Layout({ children }: LayoutProps) {
               {/* Mobile hamburger */}
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="min-[1160px]:hidden p-2 -mr-2 text-text-secondary hover:text-white transition-colors"
+                className="min-[1280px]:hidden p-2 -mr-2 text-text-secondary hover:text-white transition-colors"
                 aria-label="Toggle menu"
               >
                 <svg
@@ -211,7 +212,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Mobile menu overlay */}
         <div
-          className={`fixed inset-0 z-40 min-[1160px]:hidden transition-opacity duration-300 ${
+          className={`fixed inset-0 z-40 min-[1280px]:hidden transition-opacity duration-300 ${
             mobileOpen
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"

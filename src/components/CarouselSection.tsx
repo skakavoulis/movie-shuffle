@@ -3,13 +3,16 @@ import type { MediaItem } from "@/lib/tmdb";
 import MovieCard from "./MovieCard";
 
 interface CarouselSectionProps {
-  title: string;
+  title?: string;
   items: MediaItem[];
+  /** Replaces the default page-gutter padding, for carousels nested in another layout. */
+  className?: string;
 }
 
 export default function CarouselSection({
   title,
   items,
+  className = "px-6 md:px-12 py-6",
 }: CarouselSectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -36,10 +39,12 @@ export default function CarouselSection({
   if (!items.length) return null;
 
   return (
-    <section className="relative px-6 md:px-12 py-6">
-      <h2 className="text-xl md:text-2xl font-bold text-text-primary mb-4">
-        {title}
-      </h2>
+    <section className={`relative ${className}`}>
+      {title && (
+        <h2 className="text-xl md:text-2xl font-bold text-text-primary mb-4">
+          {title}
+        </h2>
+      )}
       <div className="relative group/carousel">
         {canScrollLeft && (
           <button
