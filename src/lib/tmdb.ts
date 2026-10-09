@@ -577,6 +577,10 @@ export interface TMDBPersonMovieCredits {
   id: number;
   name: string;
   profile_path: string | null;
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
   movie_credits?: {
     crew: TMDBPersonMovieCrewCredit[];
   };

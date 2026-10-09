@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +22,14 @@ interface CreatorFloor {
   profile_path: string | null;
   href: string;
   movies: MediaItem[];
+  /** e.g. "1899–1980" or "b. 1970"; empty when TMDB has no birthday. */
+  lifespan: string;
+  birthplace: string | null;
+  bio: string;
+  /** Every film they directed, not just the ones shown. */
+  filmCount: number;
+  /** Release years of their first and latest film, e.g. "1925–1976". */
+  activeYears: string;
 }
 
 interface GreatCreatorsProps {
@@ -29,19 +37,40 @@ interface GreatCreatorsProps {
   error: string | null;
 }
 
+const BIO_MAX_LENGTH = 280;
+
+/** Opening of the TMDB biography, cut at a sentence end where possible. */
+function shortBio(biography: string): string {
+  const first = biography.split(/\n+/)[0]?.trim() ?? "";
+  if (first.length <= BIO_MAX_LENGTH) return first;
+  const cut = first.slice(0, BIO_MAX_LENGTH);
+  const sentenceEnd = cut.lastIndexOf(". ");
+  return sentenceEnd > BIO_MAX_LENGTH / 2
+    ? cut.slice(0, sentenceEnd + 1)
+    : `${cut.replace(/\s+\S*$/, "")}…`;
+}
+
+const yearOf = (date: string | null | undefined) => date?.slice(0, 4) ?? "";
+
 async function buildFloor(creator: GreatCreator): Promise<CreatorFloor> {
   const person = await getPersonMovieCredits(creator.tmdbId);
   const { moviesPerCreator } = greatCreatorsConfig;
   const minVoteCount = creator.minVoteCount ?? greatCreatorsConfig.minVoteCount;
 
-  const directed = (person.movie_credits?.crew ?? []).filter(
-    (c) => c.job === "Director" && !c.video && c.vote_count >= minVoteCount,
-  );
+  const directed = (person.movie_credits?.crew ?? [])
+    .filter((c) => c.job === "Director" && !c.video)
+    .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i);
   const movies = directed
-    .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
+    .filter((c) => c.vote_count >= minVoteCount)
     .sort((a, b) => b.vote_average - a.vote_average)
     .slice(0, moviesPerCreator)
     .map((c) => compactMediaItemForGrid(movieToMediaItem(c)));
+
+  // Unreleased and announced projects have no votes yet; leave them out.
+  const released = directed.filter((c) => c.release_date && c.vote_count > 0);
+  const years = released.map((c) => yearOf(c.release_date)).sort();
+  const born = yearOf(person.birthday);
+  const died = yearOf(person.deathday);
 
   return {
     id: person.id,
@@ -49,6 +78,11 @@ async function buildFloor(creator: GreatCreator): Promise<CreatorFloor> {
     profile_path: person.profile_path,
     href: personHref({ id: person.id, name: person.name }),
     movies,
+    lifespan: born ? (died ? `${born}–${died}` : `b. ${born}`) : "",
+    birthplace: person.place_of_birth,
+    bio: shortBio(person.biography ?? ""),
+    filmCount: released.length,
+    activeYears: years.length ? `${years[0]}–${years[years.length - 1]}` : "",
   };
 }
 
@@ -75,6 +109,10 @@ export const getStaticProps: GetStaticProps<GreatCreatorsProps> = async () => {
 
   return { props: { floors, error: null }, revalidate };
 };
+
+function pickRandom<T>(items: T[]): T | undefined {
+  return items[Math.floor(Math.random() * items.length)];
+}
 
 const floorDomId = (id: number) => `creator-${id}`;
 
@@ -147,7 +185,33 @@ export default function GreatCreators({
   error,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { title, intro, sources } = greatCreatorsConfig;
+  const router = useRouter();
   useRestoreLastCreator();
+
+  const [spotlight, setSpotlight] = useState<number | null>(null);
+  const spotlightTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(spotlightTimer.current), []);
+
+  const jumpTo = (id: number) => {
+    document
+      .getElementById(floorDomId(id))
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setSpotlight(id);
+    clearTimeout(spotlightTimer.current);
+    spotlightTimer.current = setTimeout(() => setSpotlight(null), 2500);
+  };
+
+  const surpriseMe = () => {
+    const pick = pickRandom(floors.filter((f) => f.id !== spotlight));
+    if (pick) jumpTo(pick.id);
+  };
+
+  const pickFilm = (floor: CreatorFloor) => {
+    const film = pickRandom(floor.movies);
+    if (film) router.push(film.href);
+  };
+
+  const filmTotal = floors.reduce((sum, f) => sum + f.movies.length, 0);
 
   return (
     <Layout>
@@ -179,42 +243,130 @@ export default function GreatCreators({
           </div>
         ) : (
           <>
-            <div className="mt-8 divide-y divide-border">
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <button
+                type="button"
+                onClick={surpriseMe}
+                className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover transition-colors"
+              >
+                <span aria-hidden>🎲</span> Surprise me
+              </button>
+              <p className="text-sm text-text-muted">
+                {floors.length} directors · {filmTotal} films to explore
+              </p>
+            </div>
+
+            <nav
+              aria-label="Jump to a director"
+              className="mt-3 -mx-3 px-3 pt-6 flex gap-4 overflow-x-auto hide-scrollbar pb-2"
+            >
+              {floors.map((floor) => (
+                <button
+                  key={floor.id}
+                  type="button"
+                  onClick={() => jumpTo(floor.id)}
+                  className="group flex flex-col flex-shrink-0 w-16 text-center outline-none"
+                >
+                  <span className="relative block w-16 h-16 overflow-hidden rounded-full bg-bg-card ring-2 ring-white/10 origin-bottom transition duration-200 ease-out motion-reduce:transition-none group-hover:scale-[1.3] group-hover:ring-accent group-hover:shadow-xl group-hover:shadow-black/60 group-focus-visible:scale-[1.3] group-focus-visible:ring-accent">
+                    {profileUrl(floor.profile_path) ? (
+                      <Image
+                        src={profileUrl(floor.profile_path)!}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-text-muted font-bold">
+                        {floor.name[0]}
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-1.5 block text-[11px] leading-tight text-text-secondary group-hover:text-text-primary group-focus-visible:text-text-primary transition-colors line-clamp-2">
+                    {floor.name}
+                  </span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="mt-6 divide-y divide-border">
               {floors.map((floor, i) => (
                 <section
                   key={floor.id}
                   id={floorDomId(floor.id)}
                   data-creator-floor
                   aria-label={floor.name}
-                  className="flex flex-col md:flex-row gap-4 md:gap-8 py-8"
+                  className={`grid grid-cols-[80px_minmax(0,1fr)] md:grid-cols-[200px_minmax(0,1fr)] gap-x-4 md:gap-x-8 gap-y-4 py-8 scroll-mt-20 transition-colors duration-700 ${
+                    spotlight === floor.id ? "bg-bg-secondary" : ""
+                  }`}
                 >
                   <Link
                     href={floor.href}
-                    className="group flex md:flex-col items-center md:items-stretch gap-4 md:gap-0 flex-shrink-0 md:w-[200px]"
+                    className="md:row-span-2 self-start relative z-0 aspect-[2/3] overflow-hidden rounded-lg bg-bg-card shadow-lg ring-1 ring-white/10 origin-left transition duration-300 ease-out motion-reduce:transition-none hover:z-10 hover:scale-110 hover:shadow-2xl hover:shadow-black/70 hover:ring-white/30"
                   >
-                    <div className="relative flex-shrink-0 w-20 md:w-full aspect-[2/3] overflow-hidden rounded-lg bg-bg-card shadow-lg ring-1 ring-white/10">
-                      {profileUrl(floor.profile_path) ? (
-                        <Image
-                          src={profileUrl(floor.profile_path, "h632")!}
-                          alt={floor.name}
-                          fill
-                          priority={i === 0}
-                          sizes="(min-width: 768px) 200px, 80px"
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-text-muted text-4xl font-bold">
-                          {floor.name[0]}
-                        </div>
-                      )}
-                    </div>
-                    <h2 className="md:mt-3 text-lg font-bold text-text-primary group-hover:text-white transition-colors">
-                      {floor.name}
-                    </h2>
+                    {profileUrl(floor.profile_path) ? (
+                      <Image
+                        src={profileUrl(floor.profile_path, "h632")!}
+                        alt={floor.name}
+                        fill
+                        priority={i === 0}
+                        sizes="(min-width: 768px) 200px, 80px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-text-muted text-4xl font-bold">
+                        {floor.name[0]}
+                      </div>
+                    )}
                   </Link>
 
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
+                    <h2 className="text-xl md:text-2xl font-bold text-text-primary">
+                      <Link
+                        href={floor.href}
+                        className="hover:text-white transition-colors"
+                      >
+                        {floor.name}
+                      </Link>
+                    </h2>
+                    <p className="mt-0.5 text-sm text-text-muted">
+                      {[floor.lifespan, floor.birthplace]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    <ul className="mt-3 flex flex-wrap gap-2 text-xs text-text-secondary">
+                      {floor.filmCount > 0 && (
+                        <li className="rounded-full bg-bg-card px-3 py-1">
+                          🎬 {floor.filmCount} films directed
+                        </li>
+                      )}
+                      {floor.activeYears && (
+                        <li className="rounded-full bg-bg-card px-3 py-1">
+                          📅 {floor.activeYears}
+                        </li>
+                      )}
+                      <li className="rounded-full bg-bg-card px-3 py-1">
+                        ⭐ Top rated: {floor.movies[0].title} (
+                        {floor.movies[0].vote_average.toFixed(1)})
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="col-span-2 md:col-span-1 min-w-0">
+                    {floor.bio && (
+                      <p className="mb-4 max-w-3xl text-sm text-text-secondary line-clamp-3">
+                        {floor.bio}
+                      </p>
+                    )}
                     <CarouselSection items={floor.movies} className="" />
+                    <button
+                      type="button"
+                      onClick={() => pickFilm(floor)}
+                      className="mt-3 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-text-secondary hover:border-accent hover:text-white transition-colors"
+                    >
+                      <span aria-hidden>🎲</span> Pick a {floor.name} film
+                      for me
+                    </button>
                   </div>
                 </section>
               ))}
