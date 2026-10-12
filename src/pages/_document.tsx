@@ -10,6 +10,7 @@ export default function Document() {
         <meta property="og:site_name" content="JustPickAMovie" />
         <meta name="theme-color" content="#0b0f19" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
