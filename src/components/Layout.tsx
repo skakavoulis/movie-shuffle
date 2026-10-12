@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { createClient } from "@/lib/supabaseClient";
 import { useState, useRef, useEffect } from "react";
+import Logo from "./Logo";
 import SearchBar from "./SearchBar";
 import RegionDropdown from "./RegionDropdown";
 import { useRegion } from "@/context/RegionContext";
@@ -63,9 +64,9 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-8">
               <Link
                 href="/"
-                className="text-2xl font-extrabold tracking-tight text-accent hover:text-accent-hover transition-colors"
+                className="transition-opacity hover:opacity-85"
               >
-                JustPickAMovie
+                <Logo />
               </Link>
               <div className="hidden min-[1280px]:flex items-center gap-6">
                 {navLinks.map((link) => (

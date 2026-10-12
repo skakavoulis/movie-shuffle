@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Generate public/favicon.ico for JustPickAMovie.
 
-Red rounded square (#e50914) with a white play triangle — the brand accent
-and the “just pick a movie” action, readable at 16px.
+Two poster cards mid-shuffle: a dark red card behind, and the picked card in
+front in the brand accent (#e50914) with a white play triangle. Geometry
+mirrors public/icon.svg and the LogoMark component (64-unit grid).
 """
 
 from __future__ import annotations
 
+import math
 import struct
 import zlib
 from pathlib import Path
 
 ACCENT = (229, 9, 20, 255)  # #e50914
+ACCENT_DARK = (157, 6, 16, 255)  # #9d0610
 PLAY = (241, 241, 241, 255)  # #f1f1f1
 TRANSPARENT = (0, 0, 0, 0)
 
@@ -19,11 +22,23 @@ HIRES = 256
 SIZES = (16, 32, 48)
 
 
-def point_in_rounded_rect(x: float, y: float, size: int, radius: float) -> bool:
-    inner_lo = radius
-    inner_hi = size - 1 - radius
-    cx = min(max(x, inner_lo), inner_hi)
-    cy = min(max(y, inner_lo), inner_hi)
+def to_card_space(
+    x: float, y: float, center: tuple[float, float], degrees: float
+) -> tuple[float, float]:
+    """Undo a card's rotation so it can be tested as an axis-aligned rect."""
+    theta = math.radians(degrees)
+    dx, dy = x - center[0], y - center[1]
+    return (
+        dx * math.cos(theta) + dy * math.sin(theta),
+        -dx * math.sin(theta) + dy * math.cos(theta),
+    )
+
+
+def point_in_rounded_rect(
+    x: float, y: float, half_w: float, half_h: float, radius: float
+) -> bool:
+    cx = min(max(x, -half_w + radius), half_w - radius)
+    cy = min(max(y, -half_h + radius), half_h - radius)
     dx, dy = x - cx, y - cy
     return dx * dx + dy * dy <= radius * radius
 
@@ -44,16 +59,19 @@ def point_in_triangle(
 
 
 def sample_pixel(x: float, y: float, size: int) -> tuple[int, int, int, int]:
-    radius = size * 0.22
-    play = (
-        (size * 0.36, size * 0.26),
-        (size * 0.36, size * 0.74),
-        (size * 0.76, size * 0.50),
-    )
-    if point_in_triangle(x, y, *play):
+    u = size / 64
+    half_w, half_h, radius = 15 * u, 21 * u, 6 * u
+
+    fx, fy = to_card_space(x, y, (38.5 * u, 31 * u), 8)
+    play = ((-5.5 * u, -9 * u), (-5.5 * u, 9 * u), (9.5 * u, 0.0))
+    if point_in_triangle(fx, fy, *play):
         return PLAY
-    if point_in_rounded_rect(x, y, size, radius):
+    if point_in_rounded_rect(fx, fy, half_w, half_h, radius):
         return ACCENT
+
+    bx, by = to_card_space(x, y, (27.5 * u, 32 * u), -14)
+    if point_in_rounded_rect(bx, by, half_w, half_h, radius):
+        return ACCENT_DARK
     return TRANSPARENT
 
 
