@@ -26,6 +26,7 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
+import LazyImageGallery from "@/components/LazyImageGallery";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 
@@ -318,6 +319,13 @@ export default function MoviePage({
           mediaType="movie"
           mediaId={movie.id}
           title={movie.title}
+        />
+
+        {/* Images */}
+        <LazyImageGallery
+          key={`images-${movie.id}`}
+          src={`/api/images?mediaType=movie&id=${movie.id}`}
+          name={movie.title}
         />
 
         {/* Cast */}

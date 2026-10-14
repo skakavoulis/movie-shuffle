@@ -16,6 +16,7 @@ import {
 import { CDN_LONG } from "@/lib/cdnCache";
 import Layout from "@/components/Layout";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
+import LazyImageGallery from "@/components/LazyImageGallery";
 
 interface CastPageProps {
   person: TMDBPersonDetails;
@@ -259,6 +260,14 @@ export default function CastPage({
             <LazyVideosCarousel
               key={person.id}
               src={`/api/cast-videos?id=${person.id}`}
+            />
+
+            {/* Photos */}
+            <LazyImageGallery
+              key={`images-${person.id}`}
+              src={`/api/images?mediaType=person&id=${person.id}`}
+              name={person.name}
+              heading="Photos"
             />
 
             {/* Known For */}

@@ -26,6 +26,7 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
+import LazyImageGallery from "@/components/LazyImageGallery";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
@@ -325,6 +326,13 @@ export default function TVShowPage({
           mediaType="tv"
           mediaId={show.id}
           title={show.name}
+        />
+
+        {/* Images */}
+        <LazyImageGallery
+          key={`images-${show.id}`}
+          src={`/api/images?mediaType=tv&id=${show.id}`}
+          name={show.name}
         />
 
         {/* Seasons & episodes */}
