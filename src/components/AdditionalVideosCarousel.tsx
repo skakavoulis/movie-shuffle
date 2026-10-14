@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { TMDBVideo } from "@/lib/tmdb";
+import { useYouTubeVolume } from "@/lib/useYouTubeVolume";
 
 interface AdditionalVideosCarouselProps {
   videos: TMDBVideo[];
@@ -14,6 +15,7 @@ export default function AdditionalVideosCarousel({
   const [isDesktop, setIsDesktop] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const applySavedVolume = useYouTubeVolume(iframeRef);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -47,16 +49,12 @@ export default function AdditionalVideosCarousel({
   }, []);
 
   const initYouTubeListener = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: "listening" }),
-      "https://www.youtube.com",
-    );
+    if (!iframeRef.current?.contentWindow) return;
+    applySavedVolume();
     sendCommand("addEventListener", ["onStateChange"]);
     sendCommand("addEventListener", ["onError"]);
     if (paused) sendCommand("pauseVideo");
-  }, [paused, sendCommand]);
+  }, [paused, sendCommand, applySavedVolume]);
 
   useEffect(() => {
     if (paused) sendCommand("pauseVideo");

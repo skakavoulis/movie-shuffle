@@ -26,6 +26,7 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
 import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 
@@ -412,12 +413,9 @@ export default function TVShowPage({
               </svg>
             </button>
             <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`}
+              <YouTubeEmbed
+                videoKey={trailer.key}
                 title={`${show.name} Trailer`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
               />
             </div>
           </div>
