@@ -334,6 +334,46 @@ export async function getTVSeasonDetails(tvId: number, seasonNumber: number) {
   );
 }
 
+export interface TMDBImage {
+  file_path: string;
+  width: number;
+  height: number;
+  aspect_ratio: number;
+  vote_average: number;
+  iso_639_1: string | null;
+}
+
+export interface TMDBTitleImages {
+  id: number;
+  backdrops: TMDBImage[];
+  posters: TMDBImage[];
+  logos: TMDBImage[];
+}
+
+export interface TMDBPersonImages {
+  id: number;
+  profiles: TMDBImage[];
+}
+
+/**
+ * Kept apart from the detail payload: popular titles list hundreds of
+ * images, which would bloat every server render. English and
+ * language-neutral (textless) artwork only, so posters and logos are legible.
+ */
+export async function getTitleImages(mediaType: "movie" | "tv", id: number) {
+  return cached(`${mediaType}:${id}:images`, () =>
+    tmdbFetch<TMDBTitleImages>(`/${mediaType}/${id}/images`, {
+      include_image_language: "en,null",
+    }),
+  );
+}
+
+export async function getPersonImages(id: number) {
+  return cached(`person:${id}:images`, () =>
+    tmdbFetch<TMDBPersonImages>(`/person/${id}/images`),
+  );
+}
+
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -487,6 +527,21 @@ export function profileUrl(
   size: "w185" | "h632" | "original" = "w185",
 ) {
   if (!path) return null;
+  return `${config.tmdb.imageBaseUrl}/${size}${path}`;
+}
+
+export function imageUrl(
+  path: string,
+  size:
+    | "w185"
+    | "w300"
+    | "w342"
+    | "w500"
+    | "w780"
+    | "w1280"
+    | "h632"
+    | "original",
+) {
   return `${config.tmdb.imageBaseUrl}/${size}${path}`;
 }
 

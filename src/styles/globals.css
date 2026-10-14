@@ -180,3 +180,15 @@ body {
     animation: none;
   }
 }
+
+/* Mid-tone checkerboard so both dark and light transparent logos stay legible. */
+.logo-tile {
+  background-color: #4b5568;
+  background-image: conic-gradient(
+    #566175 25%,
+    transparent 0 50%,
+    #566175 0 75%,
+    transparent 0
+  );
+  background-size: 20px 20px;
+}

@@ -26,6 +26,8 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
+import LazyImageGallery from "@/components/LazyImageGallery";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 
 interface MoviePageProps {
@@ -262,7 +264,7 @@ export default function MoviePage({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex flex-wrap items-center gap-3 mt-6">
               {trailer && (
                 <button
                   onClick={() => setTrailerOpen(true)}
@@ -282,6 +284,11 @@ export default function MoviePage({
                   Watch Trailer
                 </button>
               )}
+              <TitleWatchProviders
+                mediaType="movie"
+                mediaId={movie.id}
+                title={movie.title}
+              />
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <LikeButton
                   mediaType="movie"
@@ -312,11 +319,11 @@ export default function MoviePage({
           paused={trailerOpen}
         />
 
-        {/* Where to watch */}
-        <TitleWatchProviders
-          mediaType="movie"
-          mediaId={movie.id}
-          title={movie.title}
+        {/* Images */}
+        <LazyImageGallery
+          key={`images-${movie.id}`}
+          src={`/api/images?mediaType=movie&id=${movie.id}`}
+          name={movie.title}
         />
 
         {/* Cast */}
@@ -364,6 +371,9 @@ export default function MoviePage({
 
         {/* Reviews */}
         <ReviewSection
+          mediaType="movie"
+          mediaId={movie.id}
+          title={movie.title}
           reviews={movie.reviews?.results ?? []}
           totalResults={movie.reviews?.total_results ?? 0}
         />
@@ -402,12 +412,9 @@ export default function MoviePage({
               </svg>
             </button>
             <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`}
+              <YouTubeEmbed
+                videoKey={trailer.key}
                 title={`${movie.title} Trailer`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
               />
             </div>
           </div>

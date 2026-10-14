@@ -26,6 +26,8 @@ import WatchlistButton from "@/components/WatchlistButton";
 import TitleWatchProviders from "@/components/TitleWatchProviders";
 import MovieNewsSection from "@/components/MovieNewsSection";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
+import LazyImageGallery from "@/components/LazyImageGallery";
+import YouTubeEmbed from "@/components/YouTubeEmbed";
 import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 
@@ -265,7 +267,7 @@ export default function TVShowPage({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex flex-wrap items-center gap-3 mt-6">
               {trailer && (
                 <button
                   onClick={() => setTrailerOpen(true)}
@@ -285,6 +287,11 @@ export default function TVShowPage({
                   Watch Trailer
                 </button>
               )}
+              <TitleWatchProviders
+                mediaType="tv"
+                mediaId={show.id}
+                title={show.name}
+              />
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <LikeButton
                   mediaType="tv"
@@ -319,11 +326,11 @@ export default function TVShowPage({
           paused={trailerOpen}
         />
 
-        {/* Where to watch */}
-        <TitleWatchProviders
-          mediaType="tv"
-          mediaId={show.id}
-          title={show.name}
+        {/* Images */}
+        <LazyImageGallery
+          key={`images-${show.id}`}
+          src={`/api/images?mediaType=tv&id=${show.id}`}
+          name={show.name}
         />
 
         {/* Seasons & episodes */}
@@ -374,6 +381,9 @@ export default function TVShowPage({
 
         {/* Reviews */}
         <ReviewSection
+          mediaType="tv"
+          mediaId={show.id}
+          title={show.name}
           reviews={show.reviews?.results ?? []}
           totalResults={show.reviews?.total_results ?? 0}
         />
@@ -412,12 +422,9 @@ export default function TVShowPage({
               </svg>
             </button>
             <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`}
+              <YouTubeEmbed
+                videoKey={trailer.key}
                 title={`${show.name} Trailer`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
               />
             </div>
           </div>

@@ -25,6 +25,7 @@ cp .env.local.example .env.local
 | `TMDB_API_KEY` | Your TMDB v3 API key |
 | `NEXT_PUBLIC_SITE_URL` | Public origin (e.g. `https://example.com`) used for canonical URLs, Open Graph tags, `robots.txt` and `/sitemap.xml`. Falls back to Vercel's production domain, then `http://localhost:3000`. |
 | `MDBLIST_API_KEY` | Optional. Free [MDBList](https://mdblist.com/preferences) key (1,000 requests/day) that adds IMDb, Rotten Tomatoes, and Metacritic ratings to title pages. Without it those pills are simply hidden. |
+| `MOTN_API_KEY` | Optional. [Streaming Availability](https://www.movieofthenight.com/about/api) key (free tier: 1,000 requests/month) that turns "Where to watch" buttons into direct links to the title, with rent/buy prices. Results are cached per title for a week in `streaming_links_cache`. Without it the buttons link to a search on each provider. |
 
 ### Supabase Setup
 
@@ -49,6 +50,7 @@ Migrations live in `supabase/migrations/` and are applied in timestamp order:
 | Migration | Description |
 |---|---|
 | `20260306120000_create_profiles.sql` | Creates the `profiles` table (1:1 with `auth.users`), enables RLS with per-user read/insert/update policies, and adds an `updated_at` auto-trigger |
+| `20261014100000_create_streaming_links_cache.sql` | Creates the server-side `streaming_links_cache` table for Streaming Availability deep links (one row per title, all countries) |
 
 ### Running the App
 
