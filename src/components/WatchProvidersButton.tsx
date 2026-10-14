@@ -185,7 +185,7 @@ export default function WatchProvidersButton({
         className={`${BUTTON_BASE} bg-white/10 hover:bg-white/15 text-white`}
       >
         <ProviderLogo provider={top} size={24} />
-        <span className="max-w-[12rem] truncate">Watch at {top.name}</span>
+        <span className="max-w-[12rem] truncate">Watch on {top.name}</span>
         <svg
           className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
