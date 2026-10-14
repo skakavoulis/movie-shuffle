@@ -241,19 +241,22 @@ export function buildWatchOffer(
 
   const groups = OFFER_TYPES.map((type) => ({
     type,
-    providers: (offer[type] ?? []).map((p): WatchProviderLink => {
-      const direct = findDirectOption(p, type, options);
-      if (direct) hasDirectLinks = true;
-      const search = PROVIDER_SEARCH_URLS[p.provider_id]?.(ctx);
-      return {
-        id: p.provider_id,
-        name: p.provider_name,
-        logoPath: p.logo_path,
-        href: direct?.link ?? search ?? offer.link,
-        kind: direct ? "direct" : search ? "search" : "tmdb",
-        price: direct ? formatPrice(direct.price) : null,
-      };
-    }),
+    // Most popular first: the button on title pages features the top one.
+    providers: [...(offer[type] ?? [])]
+      .sort((a, b) => a.display_priority - b.display_priority)
+      .map((p): WatchProviderLink => {
+        const direct = findDirectOption(p, type, options);
+        if (direct) hasDirectLinks = true;
+        const search = PROVIDER_SEARCH_URLS[p.provider_id]?.(ctx);
+        return {
+          id: p.provider_id,
+          name: p.provider_name,
+          logoPath: p.logo_path,
+          href: direct?.link ?? search ?? offer.link,
+          kind: direct ? "direct" : search ? "search" : "tmdb",
+          price: direct ? formatPrice(direct.price) : null,
+        };
+      }),
   })).filter((g) => g.providers.length > 0);
 
   return { link: offer.link, groups, hasDirectLinks };

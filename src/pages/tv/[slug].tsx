@@ -267,7 +267,7 @@ export default function TVShowPage({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex flex-wrap items-center gap-3 mt-6">
               {trailer && (
                 <button
                   onClick={() => setTrailerOpen(true)}
@@ -287,6 +287,11 @@ export default function TVShowPage({
                   Watch Trailer
                 </button>
               )}
+              <TitleWatchProviders
+                mediaType="tv"
+                mediaId={show.id}
+                title={show.name}
+              />
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <LikeButton
                   mediaType="tv"
@@ -319,13 +324,6 @@ export default function TVShowPage({
           key={show.id}
           src={`/api/title-videos?mediaType=tv&id=${show.id}`}
           paused={trailerOpen}
-        />
-
-        {/* Where to watch */}
-        <TitleWatchProviders
-          mediaType="tv"
-          mediaId={show.id}
-          title={show.name}
         />
 
         {/* Images */}

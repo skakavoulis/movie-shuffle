@@ -264,7 +264,7 @@ export default function MoviePage({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 mt-6">
+            <div className="flex flex-wrap items-center gap-3 mt-6">
               {trailer && (
                 <button
                   onClick={() => setTrailerOpen(true)}
@@ -284,6 +284,11 @@ export default function MoviePage({
                   Watch Trailer
                 </button>
               )}
+              <TitleWatchProviders
+                mediaType="movie"
+                mediaId={movie.id}
+                title={movie.title}
+              />
               <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                 <LikeButton
                   mediaType="movie"
@@ -312,13 +317,6 @@ export default function MoviePage({
           key={movie.id}
           src={`/api/title-videos?mediaType=movie&id=${movie.id}`}
           paused={trailerOpen}
-        />
-
-        {/* Where to watch */}
-        <TitleWatchProviders
-          mediaType="movie"
-          mediaId={movie.id}
-          title={movie.title}
         />
 
         {/* Images */}

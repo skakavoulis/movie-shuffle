@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRegion } from "@/context/RegionContext";
-import WatchProvidersSection from "@/components/WatchProvidersSection";
+import WatchProvidersButton from "@/components/WatchProvidersButton";
 import type { WatchOffer } from "@/lib/providerUrls";
 
 type Props = {
@@ -15,28 +15,39 @@ export default function TitleWatchProviders({
   title,
 }: Props) {
   const { region } = useRegion();
-  const [offer, setOffer] = useState<WatchOffer | null>(null);
+  const query = new URLSearchParams({
+    mediaType,
+    id: String(mediaId),
+    region,
+    title,
+  }).toString();
+  // Remember which query the offer belongs to, so a new title or region
+  // shows the loading state until its own response arrives.
+  const [result, setResult] = useState<{
+    query: string;
+    offer: WatchOffer | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const q = new URLSearchParams({
-      mediaType,
-      id: String(mediaId),
-      region,
-      title,
-    });
-    fetch(`/api/title-watch-providers?${q}`)
+    fetch(`/api/title-watch-providers?${query}`)
       .then((r) => (r.ok ? r.json() : { offer: null }))
       .then((data: { offer?: WatchOffer | null }) => {
-        if (!cancelled) setOffer(data.offer ?? null);
+        if (!cancelled) setResult({ query, offer: data.offer ?? null });
       })
       .catch(() => {
-        if (!cancelled) setOffer(null);
+        if (!cancelled) setResult({ query, offer: null });
       });
     return () => {
       cancelled = true;
     };
-  }, [mediaType, mediaId, region, title]);
+  }, [query]);
 
-  return <WatchProvidersSection offer={offer} />;
+  const loading = result?.query !== query;
+  return (
+    <WatchProvidersButton
+      offer={loading ? null : result.offer}
+      loading={loading}
+    />
+  );
 }
