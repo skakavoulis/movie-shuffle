@@ -1,47 +1,60 @@
 import Image from "next/image";
-import {
-  providerLogoUrl,
-  type TMDBWatchProvider,
-  type TMDBWatchProviderOffer,
-} from "@/lib/tmdb";
-import { getProviderSearchUrl } from "@/lib/providerUrls";
+import { providerLogoUrl } from "@/lib/tmdb";
+import type {
+  OfferType,
+  WatchOffer,
+  WatchProviderLink,
+} from "@/lib/providerUrls";
 
 interface WatchProvidersSectionProps {
-  offer: TMDBWatchProviderOffer | null;
-  /** Title used to build direct search URLs on each provider */
-  title: string;
+  offer: WatchOffer | null;
+}
+
+const GROUP_LABELS: Record<OfferType, string> = {
+  flatrate: "Stream",
+  free: "Free",
+  ads: "With ads",
+  rent: "Rent",
+  buy: "Buy",
+};
+
+function linkLabel(p: WatchProviderLink, type: OfferType): string {
+  if (p.kind === "search") return `Search on ${p.name}`;
+  if (p.kind === "tmdb") return `${p.name}: see watch options`;
+  const action = type === "rent" ? "Rent" : type === "buy" ? "Buy" : "Watch";
+  return p.price
+    ? `${action} on ${p.name} for ${p.price}`
+    : `${action} on ${p.name}`;
 }
 
 function ProviderGroup({
-  label,
+  type,
   providers,
-  watchLink,
-  title,
 }: {
-  label: string;
-  providers: TMDBWatchProvider[];
-  watchLink: string;
-  title: string;
+  type: OfferType;
+  providers: WatchProviderLink[];
 }) {
-  if (providers.length === 0) return null;
   return (
     <div>
       <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-        {label}
+        {GROUP_LABELS[type]}
       </p>
       <div className="flex flex-wrap gap-2">
         {providers.map((p) => {
-          const href = getProviderSearchUrl(p.provider_id, title) ?? watchLink;
+          const label = linkLabel(p, type);
           return (
             <a
-              key={p.provider_id}
-              href={href}
+              key={p.id}
+              href={p.href}
+              target="_blank"
               rel="noopener noreferrer"
+              aria-label={label}
+              title={label}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-card border border-border hover:border-white/30 hover:bg-bg-hover transition-colors group"
             >
-              {p.logo_path ? (
+              {p.logoPath ? (
                 <Image
-                  src={providerLogoUrl(p.logo_path, "w92")!}
+                  src={providerLogoUrl(p.logoPath, "w92")!}
                   alt=""
                   width={32}
                   height={32}
@@ -49,7 +62,12 @@ function ProviderGroup({
                 />
               ) : (
                 <span className="w-8 h-8 rounded bg-white/10 flex items-center justify-center text-text-muted text-xs font-bold flex-shrink-0">
-                  {p.provider_name[0]}
+                  {p.name[0]}
+                </span>
+              )}
+              {p.price && (
+                <span className="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">
+                  {p.price}
                 </span>
               )}
             </a>
@@ -62,24 +80,8 @@ function ProviderGroup({
 
 export default function WatchProvidersSection({
   offer,
-  title,
 }: WatchProvidersSectionProps) {
-  if (!offer?.link) return null;
-
-  const flatrate = offer.flatrate ?? [];
-  const rent = offer.rent ?? [];
-  const buy = offer.buy ?? [];
-  const free = offer.free ?? [];
-  const ads = offer.ads ?? [];
-
-  const hasAny =
-    flatrate.length > 0 ||
-    rent.length > 0 ||
-    buy.length > 0 ||
-    free.length > 0 ||
-    ads.length > 0;
-
-  if (!hasAny) return null;
+  if (!offer || offer.groups.length === 0) return null;
 
   return (
     <section className="mt-10">
@@ -87,46 +89,9 @@ export default function WatchProvidersSection({
         Where to watch
       </h2>
       <div className="space-y-4">
-        {flatrate.length > 0 && (
-          <ProviderGroup
-            label="Stream"
-            providers={flatrate}
-            watchLink={offer.link}
-            title={title}
-          />
-        )}
-        {free.length > 0 && (
-          <ProviderGroup
-            label="Free"
-            providers={free}
-            watchLink={offer.link}
-            title={title}
-          />
-        )}
-        {ads.length > 0 && (
-          <ProviderGroup
-            label="With ads"
-            providers={ads}
-            watchLink={offer.link}
-            title={title}
-          />
-        )}
-        {rent.length > 0 && (
-          <ProviderGroup
-            label="Rent"
-            providers={rent}
-            watchLink={offer.link}
-            title={title}
-          />
-        )}
-        {buy.length > 0 && (
-          <ProviderGroup
-            label="Buy"
-            providers={buy}
-            watchLink={offer.link}
-            title={title}
-          />
-        )}
+        {offer.groups.map((g) => (
+          <ProviderGroup key={g.type} type={g.type} providers={g.providers} />
+        ))}
       </div>
       <p className="mt-3 text-xs text-text-muted">
         Streaming data by{" "}
@@ -138,6 +103,20 @@ export default function WatchProvidersSection({
         >
           JustWatch
         </a>
+        {offer.hasDirectLinks && (
+          <>
+            {" "}
+            · Links by{" "}
+            <a
+              href="https://www.movieofthenight.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:text-accent-hover underline"
+            >
+              Movie of the Night
+            </a>
+          </>
+        )}
       </p>
     </section>
   );

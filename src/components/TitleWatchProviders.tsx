@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRegion } from "@/context/RegionContext";
 import WatchProvidersSection from "@/components/WatchProvidersSection";
-import type { TMDBWatchProviderOffer } from "@/lib/tmdb";
+import type { WatchOffer } from "@/lib/providerUrls";
 
 type Props = {
   mediaType: "movie" | "tv";
@@ -15,7 +15,7 @@ export default function TitleWatchProviders({
   title,
 }: Props) {
   const { region } = useRegion();
-  const [offer, setOffer] = useState<TMDBWatchProviderOffer | null>(null);
+  const [offer, setOffer] = useState<WatchOffer | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -23,10 +23,11 @@ export default function TitleWatchProviders({
       mediaType,
       id: String(mediaId),
       region,
+      title,
     });
     fetch(`/api/title-watch-providers?${q}`)
       .then((r) => (r.ok ? r.json() : { offer: null }))
-      .then((data: { offer?: TMDBWatchProviderOffer | null }) => {
+      .then((data: { offer?: WatchOffer | null }) => {
         if (!cancelled) setOffer(data.offer ?? null);
       })
       .catch(() => {
@@ -35,7 +36,7 @@ export default function TitleWatchProviders({
     return () => {
       cancelled = true;
     };
-  }, [mediaType, mediaId, region]);
+  }, [mediaType, mediaId, region, title]);
 
-  return <WatchProvidersSection offer={offer} title={title} />;
+  return <WatchProvidersSection offer={offer} />;
 }

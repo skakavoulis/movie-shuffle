@@ -20,6 +20,10 @@ export const config = {
     apiKey: process.env.MDBLIST_API_KEY ?? "",
     baseUrl: "https://api.mdblist.com",
   },
+  motn: {
+    apiKey: process.env.MOTN_API_KEY ?? "",
+    baseUrl: "https://api.movieofthenight.com/v4",
+  },
 } as const;
 
 export function assertServerConfig() {
