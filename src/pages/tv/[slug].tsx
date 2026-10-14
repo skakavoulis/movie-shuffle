@@ -381,6 +381,9 @@ export default function TVShowPage({
 
         {/* Reviews */}
         <ReviewSection
+          mediaType="tv"
+          mediaId={show.id}
+          title={show.name}
           reviews={show.reviews?.results ?? []}
           totalResults={show.reviews?.total_results ?? 0}
         />

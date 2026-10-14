@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { AUTH_RETURN_COOKIE, safeReturnPath } from "@/lib/authReturn";
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,5 +13,15 @@ export default async function handler(
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  res.redirect(303, "/");
+  const returnTo = safeReturnPath(req.cookies[AUTH_RETURN_COOKIE]);
+  if (returnTo) {
+    // Keep the session cookies set by exchangeCodeForSession.
+    const existing = res.getHeader("Set-Cookie") ?? [];
+    res.setHeader("Set-Cookie", [
+      ...(Array.isArray(existing) ? existing : [String(existing)]),
+      `${AUTH_RETURN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`,
+    ]);
+  }
+
+  res.redirect(303, returnTo ?? "/");
 }

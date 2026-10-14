@@ -371,6 +371,9 @@ export default function MoviePage({
 
         {/* Reviews */}
         <ReviewSection
+          mediaType="movie"
+          mediaId={movie.id}
+          title={movie.title}
           reviews={movie.reviews?.results ?? []}
           totalResults={movie.reviews?.total_results ?? 0}
         />
