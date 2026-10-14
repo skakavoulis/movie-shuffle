@@ -42,6 +42,8 @@ interface MOTNShow {
 
 const LINKS_TTL_SECONDS = 7 * 24 * 60 * 60; // 1 week
 const MEMORY_TTL_SECONDS = 60 * 60; // 1 hour
+/** Past this, fall back to search links rather than keep the button loading. */
+const FETCH_TIMEOUT_MS = 8000;
 
 const cachedStreamingOptions = createTitleCache<StreamingOptionsByCountry>({
   table: "streaming_links_cache",
@@ -66,9 +68,15 @@ async function fetchStreamingOptions(
   mediaType: "movie" | "tv",
   tmdbId: number,
 ): Promise<StreamingOptionsByCountry> {
+  // Series default to per-episode options for every country, which runs to
+  // tens of MB for long shows (The Simpsons: >12 MB, >90 s). Only show-level
+  // options are used.
   const res = await fetch(
-    `${config.motn.baseUrl}/shows/${mediaType}/${tmdbId}`,
-    { headers: { "X-API-Key": config.motn.apiKey } },
+    `${config.motn.baseUrl}/shows/${mediaType}/${tmdbId}?series_granularity=show`,
+    {
+      headers: { "X-API-Key": config.motn.apiKey },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    },
   );
 
   // Unknown titles are cached as empty so they don't spend quota again.
