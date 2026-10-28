@@ -71,7 +71,30 @@ function formatDate(dateStr: string) {
   });
 }
 
-type CastCredit = NonNullable<TMDBPersonDetails["combined_credits"]>["cast"][number];
+type Credits = NonNullable<TMDBPersonDetails["combined_credits"]>;
+type CastCredit = Credits["cast"][number];
+type CrewCredit = Credits["crew"][number];
+
+interface KnownForItem {
+  id: number;
+  media_type: "movie" | "tv";
+  title: string;
+  poster_path: string | null;
+  date?: string;
+  /** Character for actors, top jobs (e.g. "Creator, Director") for crew. */
+  role?: string;
+}
+
+function toKnownForItem(c: CastCredit | CrewCredit, role?: string): KnownForItem {
+  return {
+    id: c.id,
+    media_type: c.media_type,
+    title: (c.media_type === "movie" ? c.title : c.name) ?? "",
+    poster_path: c.poster_path,
+    date: c.media_type === "movie" ? c.release_date : c.first_air_date,
+    role,
+  };
+}
 
 // News, Reality, Talk
 const NON_SCRIPTED_GENRES = new Set([10763, 10764, 10767]);
@@ -91,6 +114,81 @@ function knownForScore(c: CastCredit) {
   const order = c.order ?? 0;
   const billing = order <= 3 ? 1 : order <= 10 ? 0.5 : 0.2;
   return (c.vote_count ?? 0) * billing;
+}
+
+function castKnownFor(cast: CastCredit[]) {
+  return cast
+    .filter(isKnownForCandidate)
+    .filter(
+      (c, i, arr) =>
+        arr.findIndex((x) => x.id === c.id && x.media_type === c.media_type) ===
+        i,
+    )
+    .sort((a, b) => knownForScore(b) - knownForScore(a))
+    .slice(0, 20)
+    .map((c) => toKnownForItem(c, c.character));
+}
+
+// Most to least defining, for ranking a person's jobs on one title.
+const JOB_PRIORITY = [
+  "Creator",
+  "Director",
+  "Screenplay",
+  "Writer",
+  "Teleplay",
+  "Story",
+  "Novel",
+  "Original Music Composer",
+  "Director of Photography",
+  "Editor",
+  "Executive Producer",
+  "Producer",
+];
+
+function jobPriority(job: string) {
+  const i = JOB_PRIORITY.indexOf(job);
+  return i < 0 ? JOB_PRIORITY.length : i;
+}
+
+// Titles the person shaped from behind the camera, ranked like castKnownFor
+// by vote count, weighted by their most defining job on each. On TV only
+// creators and jobs held for 3+ episodes count, not one-off episodes.
+function crewKnownFor(crew: CrewCredit[]) {
+  const byTitle = new Map<string, CrewCredit[]>();
+  for (const c of crew) {
+    if (c.genre_ids?.some((g) => NON_SCRIPTED_GENRES.has(g))) continue;
+    if (
+      c.media_type === "tv" &&
+      c.job !== "Creator" &&
+      (c.episode_count ?? 0) < 3
+    ) {
+      continue;
+    }
+    const key = `${c.media_type}-${c.id}`;
+    byTitle.set(key, [...(byTitle.get(key) ?? []), c]);
+  }
+
+  return [...byTitle.values()]
+    .map((jobs) => {
+      const ranked = [...new Set(jobs.map((j) => j.job))].sort(
+        (a, b) => jobPriority(a) - jobPriority(b),
+      );
+      // Creative jobs count fully, producing partly, anything else little.
+      const top = jobPriority(ranked[0]);
+      const weight =
+        top <= JOB_PRIORITY.indexOf("Editor")
+          ? 1
+          : top < JOB_PRIORITY.length
+            ? 0.6
+            : 0.3;
+      return {
+        item: toKnownForItem(jobs[0], ranked.slice(0, 2).join(", ")),
+        score: (jobs[0].vote_count ?? 0) * weight,
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 20)
+    .map(({ item }) => item);
 }
 
 function formatMonth(date: string) {
@@ -167,8 +265,6 @@ export default function CastPage({
     window.scrollTo(0, 0);
   }, []);
 
-  const credits = person.combined_credits?.cast ?? [];
-
   const filmography = person.combined_credits
     ? buildFilmography(person.combined_credits)
     : [];
@@ -177,15 +273,16 @@ export default function CastPage({
     : null;
   const upcoming = upcomingCredits(filmography, today);
 
-  const knownFor = credits
-    .filter(isKnownForCandidate)
-    .filter(
-      (c, i, arr) =>
-        arr.findIndex((x) => x.id === c.id && x.media_type === c.media_type) ===
-        i,
-    )
-    .sort((a, b) => knownForScore(b) - knownForScore(a))
-    .slice(0, 20);
+  // Writers, directors and the like are known for their crew work; fall back
+  // to acting when they have none worth showing.
+  const crewKnown =
+    person.known_for_department !== "Acting"
+      ? crewKnownFor(person.combined_credits?.crew ?? [])
+      : [];
+  const knownFor =
+    crewKnown.length > 0
+      ? crewKnown
+      : castKnownFor(person.combined_credits?.cast ?? []);
 
   return (
     <Layout>
@@ -443,18 +540,12 @@ export default function CastPage({
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {knownFor.map((credit) => {
-                const title =
-                  credit.media_type === "movie"
-                    ? (credit.title ?? "")
-                    : (credit.name ?? "");
+                const { title } = credit;
                 const href =
                   credit.media_type === "movie"
                     ? movieHref({ id: credit.id, title })
                     : tvHref({ id: credit.id, name: title });
-                const year =
-                  credit.media_type === "movie"
-                    ? credit.release_date?.split("-")[0]
-                    : credit.first_air_date?.split("-")[0];
+                const year = credit.date?.split("-")[0];
 
                 return (
                   <Link
@@ -479,9 +570,9 @@ export default function CastPage({
                     <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
                       {title}
                     </p>
-                    {credit.character && (
+                    {credit.role && (
                       <p className="text-xs text-text-muted truncate">
-                        {credit.character}
+                        {credit.role}
                       </p>
                     )}
                     {year && (
@@ -499,6 +590,7 @@ export default function CastPage({
           entries={filmography}
           birthday={person.birthday}
           deathday={person.deathday}
+          knownForDepartment={person.known_for_department}
         />
       </div>
     </Layout>

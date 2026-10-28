@@ -763,6 +763,8 @@ export interface TMDBPersonDetails {
       popularity: number;
       vote_count: number;
       genre_ids: number[];
+      /** TV only: episodes worked on in this job. */
+      episode_count?: number;
     }[];
   };
   external_ids?: {

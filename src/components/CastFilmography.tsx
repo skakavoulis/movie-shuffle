@@ -90,12 +90,15 @@ interface CastFilmographyProps {
   entries: FilmographyEntry[];
   birthday: string | null;
   deathday: string | null;
+  /** The department the person is best known in, shown first and selected. */
+  knownForDepartment?: string;
 }
 
 export default function CastFilmography({
   entries,
   birthday,
   deathday,
+  knownForDepartment = "Acting",
 }: CastFilmographyProps) {
   // Hidden by default, unless self appearances are all the acting there is
   // (hosts, documentary subjects), which would leave the list empty.
@@ -108,13 +111,16 @@ export default function CastFilmography({
     ? entries
     : entries.filter((e) => !isSelfAppearance(e));
 
-  // Acting first, then the other departments by how much work is in each.
+  // Their main department first, then Acting, then the rest by how much work
+  // is in each.
   const counts = new Map<string, number>();
   for (const e of shown) {
     counts.set(e.department, (counts.get(e.department) ?? 0) + 1);
   }
-  const departments = [...counts.entries()].sort(([a, ac], [b, bc]) =>
-    a === "Acting" ? -1 : b === "Acting" ? 1 : bc - ac,
+  const rank = (d: string) =>
+    d === knownForDepartment ? 0 : d === "Acting" ? 1 : 2;
+  const departments = [...counts.entries()].sort(
+    ([a, ac], [b, bc]) => rank(a) - rank(b) || bc - ac,
   );
 
   const [department, setDepartment] = useState(departments[0]?.[0] ?? "Acting");
