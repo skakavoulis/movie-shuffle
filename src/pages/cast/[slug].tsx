@@ -284,131 +284,131 @@ export default function CastPage({
                 </div>
               </div>
             )}
-
-            {/* Videos */}
-            <LazyVideosCarousel
-              key={person.id}
-              src={`/api/cast-videos?id=${person.id}`}
-            />
-
-            {/* Photos */}
-            <LazyImageGallery
-              key={`images-${person.id}`}
-              src={`/api/images?mediaType=person&id=${person.id}`}
-              name={person.name}
-              heading="Photos"
-            />
-
-            {/* Known For */}
-            {knownFor.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-xl font-bold text-text-primary mb-6">
-                  Known For
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {knownFor.map((credit) => {
-                    const title =
-                      credit.media_type === "movie"
-                        ? (credit.title ?? "")
-                        : (credit.name ?? "");
-                    const href =
-                      credit.media_type === "movie"
-                        ? movieHref({ id: credit.id, title })
-                        : tvHref({ id: credit.id, name: title });
-                    const year =
-                      credit.media_type === "movie"
-                        ? credit.release_date?.split("-")[0]
-                        : credit.first_air_date?.split("-")[0];
-
-                    return (
-                      <Link
-                        key={`${credit.media_type}-${credit.id}`}
-                        href={href}
-                        className="group"
-                      >
-                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-bg-card ring-1 ring-white/5 group-hover:ring-accent/50 transition-all">
-                          <Image
-                            src={posterUrl(credit.poster_path, "w342")}
-                            alt={title}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute top-2 right-2">
-                            <span className="px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-semibold text-white uppercase">
-                              {credit.media_type === "movie" ? "Film" : "TV"}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
-                          {title}
-                        </p>
-                        {credit.character && (
-                          <p className="text-xs text-text-muted truncate">
-                            {credit.character}
-                          </p>
-                        )}
-                        {year && (
-                          <p className="text-xs text-text-muted">{year}</p>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* Full filmography */}
-            {sortedCredits.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-xl font-bold text-text-primary mb-4">
-                  Filmography
-                </h2>
-                <div className="bg-bg-card rounded-xl border border-border overflow-hidden">
-                  {sortedCredits.map((credit, i) => {
-                    const title =
-                      credit.media_type === "movie"
-                        ? (credit.title ?? "")
-                        : (credit.name ?? "");
-                    const href =
-                      credit.media_type === "movie"
-                        ? movieHref({ id: credit.id, title })
-                        : tvHref({ id: credit.id, name: title });
-                    const year =
-                      credit.media_type === "movie"
-                        ? credit.release_date?.split("-")[0]
-                        : credit.first_air_date?.split("-")[0];
-
-                    return (
-                      <Link
-                        key={`${credit.media_type}-${credit.id}`}
-                        href={href}
-                        className={`flex items-center gap-4 px-4 py-3 hover:bg-bg-hover transition-colors ${
-                          i > 0 ? "border-t border-border" : ""
-                        }`}
-                      >
-                        <span className="text-sm text-text-muted w-12 flex-shrink-0 text-right">
-                          {year || "—"}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] font-semibold text-text-muted uppercase flex-shrink-0">
-                          {credit.media_type === "movie" ? "Film" : "TV"}
-                        </span>
-                        <span className="text-sm text-text-primary font-medium truncate">
-                          {title}
-                        </span>
-                        {credit.character && (
-                          <span className="text-sm text-text-muted truncate ml-auto flex-shrink-0">
-                            as {credit.character}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
           </div>
         </div>
+
+        {/* Videos */}
+        <LazyVideosCarousel
+          key={person.id}
+          src={`/api/cast-videos?id=${person.id}`}
+        />
+
+        {/* Photos */}
+        <LazyImageGallery
+          key={`images-${person.id}`}
+          src={`/api/images?mediaType=person&id=${person.id}`}
+          name={person.name}
+          heading="Photos"
+        />
+
+        {/* Known For */}
+        {knownFor.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-text-primary mb-6">
+              Known For
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {knownFor.map((credit) => {
+                const title =
+                  credit.media_type === "movie"
+                    ? (credit.title ?? "")
+                    : (credit.name ?? "");
+                const href =
+                  credit.media_type === "movie"
+                    ? movieHref({ id: credit.id, title })
+                    : tvHref({ id: credit.id, name: title });
+                const year =
+                  credit.media_type === "movie"
+                    ? credit.release_date?.split("-")[0]
+                    : credit.first_air_date?.split("-")[0];
+
+                return (
+                  <Link
+                    key={`${credit.media_type}-${credit.id}`}
+                    href={href}
+                    className="group"
+                  >
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-bg-card ring-1 ring-white/5 group-hover:ring-accent/50 transition-all">
+                      <Image
+                        src={posterUrl(credit.poster_path, "w342")}
+                        alt={title}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <span className="px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-semibold text-white uppercase">
+                          {credit.media_type === "movie" ? "Film" : "TV"}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
+                      {title}
+                    </p>
+                    {credit.character && (
+                      <p className="text-xs text-text-muted truncate">
+                        {credit.character}
+                      </p>
+                    )}
+                    {year && (
+                      <p className="text-xs text-text-muted">{year}</p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Full filmography */}
+        {sortedCredits.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-text-primary mb-4">
+              Filmography
+            </h2>
+            <div className="bg-bg-card rounded-xl border border-border overflow-hidden">
+              {sortedCredits.map((credit, i) => {
+                const title =
+                  credit.media_type === "movie"
+                    ? (credit.title ?? "")
+                    : (credit.name ?? "");
+                const href =
+                  credit.media_type === "movie"
+                    ? movieHref({ id: credit.id, title })
+                    : tvHref({ id: credit.id, name: title });
+                const year =
+                  credit.media_type === "movie"
+                    ? credit.release_date?.split("-")[0]
+                    : credit.first_air_date?.split("-")[0];
+
+                return (
+                  <Link
+                    key={`${credit.media_type}-${credit.id}`}
+                    href={href}
+                    className={`flex items-center gap-4 px-4 py-3 hover:bg-bg-hover transition-colors ${
+                      i > 0 ? "border-t border-border" : ""
+                    }`}
+                  >
+                    <span className="text-sm text-text-muted w-12 flex-shrink-0 text-right">
+                      {year || "—"}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] font-semibold text-text-muted uppercase flex-shrink-0">
+                      {credit.media_type === "movie" ? "Film" : "TV"}
+                    </span>
+                    <span className="text-sm text-text-primary font-medium truncate">
+                      {title}
+                    </span>
+                    {credit.character && (
+                      <span className="text-sm text-text-muted truncate ml-auto flex-shrink-0">
+                        as {credit.character}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </Layout>
   );
