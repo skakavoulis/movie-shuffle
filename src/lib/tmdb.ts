@@ -727,6 +727,21 @@ export interface TMDBPersonDetails {
       /** TV only. */
       episode_count?: number;
     }[];
+    crew: {
+      id: number;
+      media_type: "movie" | "tv";
+      title?: string;
+      name?: string;
+      job: string;
+      department: string;
+      poster_path: string | null;
+      vote_average: number;
+      release_date?: string;
+      first_air_date?: string;
+      popularity: number;
+      vote_count: number;
+      genre_ids: number[];
+    }[];
   };
   external_ids?: {
     imdb_id: string | null;

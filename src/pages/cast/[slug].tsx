@@ -17,9 +17,17 @@ import { CDN_LONG } from "@/lib/cdnCache";
 import Layout from "@/components/Layout";
 import LazyVideosCarousel from "@/components/LazyVideosCarousel";
 import LazyImageGallery from "@/components/LazyImageGallery";
+import CastFilmography, {
+  buildFilmography,
+  yearsBetween,
+  SELF_CHARACTER,
+  type FilmographyEntry,
+} from "@/components/CastFilmography";
 
 interface CastPageProps {
   person: TMDBPersonDetails;
+  /** YYYY-MM-DD on the server, so upcoming credits and ages render the same on the client. */
+  today: string;
 }
 
 export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
@@ -47,20 +55,13 @@ export const getServerSideProps: GetServerSideProps<CastPageProps> = async ({
     }
 
     res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { person } };
+    return {
+      props: { person, today: new Date().toISOString().slice(0, 10) },
+    };
   } catch {
     return { notFound: true };
   }
 };
-
-function formatAge(birthday: string, deathday: string | null) {
-  const birth = new Date(birthday);
-  const end = deathday ? new Date(deathday) : new Date();
-  let age = end.getFullYear() - birth.getFullYear();
-  const m = end.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && end.getDate() < birth.getDate())) age--;
-  return age;
-}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -74,7 +75,6 @@ type CastCredit = NonNullable<TMDBPersonDetails["combined_credits"]>["cast"][num
 
 // News, Reality, Talk
 const NON_SCRIPTED_GENRES = new Set([10763, 10764, 10767]);
-const SELF_CHARACTER = /^(self|himself|herself|themselves)\b/i;
 
 // Drops talk shows, appearances as themselves, and one-off TV guest spots,
 // which TMDB's title popularity otherwise pushes to the top.
@@ -93,8 +93,75 @@ function knownForScore(c: CastCredit) {
   return (c.vote_count ?? 0) * billing;
 }
 
+function formatMonth(date: string) {
+  const [y, m] = date.split("-").map(Number);
+  return new Date(y, m - 1).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// Career totals from released work. Only roles count: not appearances as
+// themselves, talk shows, or one-off TV guest spots.
+function careerStats(
+  credits: NonNullable<TMDBPersonDetails["combined_credits"]>,
+  today: string,
+) {
+  const titles = new Map<string, { date: string; vote: number; votes: number }>();
+  const add = (c: {
+    id: number;
+    media_type: "movie" | "tv";
+    release_date?: string;
+    first_air_date?: string;
+    vote_average: number;
+    vote_count: number;
+  }) => {
+    const date = c.media_type === "movie" ? c.release_date : c.first_air_date;
+    if (!date || date > today) return;
+    titles.set(`${c.media_type}-${c.id}`, {
+      date,
+      vote: c.vote_average ?? 0,
+      votes: c.vote_count ?? 0,
+    });
+  };
+  credits.cast.filter(isKnownForCandidate).forEach(add);
+  (credits.crew ?? []).forEach(add);
+
+  const keys = [...titles.keys()];
+  const values = [...titles.values()];
+  const years = values.map((t) => Number(t.date.slice(0, 4)));
+  const rated = values.filter((t) => t.votes >= 50);
+  return {
+    films: keys.filter((k) => k.startsWith("movie-")).length,
+    shows: keys.filter((k) => k.startsWith("tv-")).length,
+    firstYear: years.length ? Math.min(...years) : null,
+    lastYear: years.length ? Math.max(...years) : null,
+    avgRating: rated.length
+      ? rated.reduce((sum, t) => sum + t.vote, 0) / rated.length
+      : null,
+  };
+}
+
+// Announced work: dated in the future, or a film with no date yet. Skips
+// appearances as themselves, which are mostly undated documentaries.
+function upcomingCredits(entries: FilmographyEntry[], today: string) {
+  return entries
+    .filter((e) => (e.date ? e.date > today : e.mediaType === "movie"))
+    .filter(
+      (e) =>
+        e.department !== "Acting" || (e.role && !SELF_CHARACTER.test(e.role)),
+    )
+    .filter(
+      (e, i, arr) =>
+        arr.findIndex((x) => x.id === e.id && x.mediaType === e.mediaType) === i,
+    )
+    .sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"))
+    .slice(0, 10);
+}
+
 export default function CastPage({
   person,
+  today,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -102,22 +169,13 @@ export default function CastPage({
 
   const credits = person.combined_credits?.cast ?? [];
 
-  const sortedCredits = [...credits]
-    .sort((a, b) => {
-      // Use release date (or first air date) descending
-      const getDate = (credit: any) =>
-        credit.media_type === "movie"
-          ? credit.release_date
-          : credit.first_air_date;
-      const aDate = getDate(a) || "";
-      const bDate = getDate(b) || "";
-      return bDate.localeCompare(aDate);
-    })
-    .filter(
-      (c, i, arr) =>
-        arr.findIndex((x) => x.id === c.id && x.media_type === c.media_type) ===
-        i,
-    );
+  const filmography = person.combined_credits
+    ? buildFilmography(person.combined_credits)
+    : [];
+  const stats = person.combined_credits
+    ? careerStats(person.combined_credits, today)
+    : null;
+  const upcoming = upcomingCredits(filmography, today);
 
   const knownFor = credits
     .filter(isKnownForCandidate)
@@ -186,7 +244,7 @@ export default function CastPage({
                     {!person.deathday && (
                       <span className="text-text-muted font-normal">
                         {" "}
-                        (age {formatAge(person.birthday, null)})
+                        (age {yearsBetween(person.birthday, today)})
                       </span>
                     )}
                   </p>
@@ -200,7 +258,7 @@ export default function CastPage({
                     {formatDate(person.deathday)}
                     <span className="text-text-muted font-normal">
                       {" "}
-                      (age {formatAge(person.birthday, person.deathday)})
+                      (age {yearsBetween(person.birthday, person.deathday)})
                     </span>
                   </p>
                 </div>
@@ -273,6 +331,37 @@ export default function CastPage({
               {person.name}
             </h1>
 
+            {/* Career stats */}
+            {stats && (stats.films > 0 || stats.shows > 0) && (
+              <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
+                {[
+                  stats.films > 0 && ["Films", stats.films],
+                  stats.shows > 0 && ["TV Shows", stats.shows],
+                  stats.firstYear !== null && [
+                    "Years Active",
+                    stats.firstYear === stats.lastYear
+                      ? stats.firstYear
+                      : `${stats.firstYear}–${stats.lastYear}`,
+                  ],
+                  stats.avgRating !== null && [
+                    "Avg Rating",
+                    `★ ${stats.avgRating.toFixed(1)}`,
+                  ],
+                ]
+                  .filter((s): s is [string, string | number] => !!s)
+                  .map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-xs uppercase tracking-wide text-text-muted">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 text-lg font-bold text-text-primary tabular-nums">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+              </dl>
+            )}
+
             {/* Biography */}
             {person.biography && (
               <div className="mt-6">
@@ -286,6 +375,51 @@ export default function CastPage({
             )}
           </div>
         </div>
+
+        {/* Coming Soon */}
+        {upcoming.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-text-primary mb-6">
+              Coming Soon
+            </h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+              {upcoming.map((e) => (
+                <Link
+                  key={`${e.mediaType}-${e.id}`}
+                  href={
+                    e.mediaType === "movie"
+                      ? movieHref({ id: e.id, title: e.title })
+                      : tvHref({ id: e.id, name: e.title })
+                  }
+                  className="group"
+                >
+                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-bg-card ring-1 ring-white/5 group-hover:ring-accent/50 transition-all">
+                    <Image
+                      src={posterUrl(e.posterPath, "w342")}
+                      alt={e.title}
+                      fill
+                      sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 12vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 left-2">
+                      <span className="px-1.5 py-0.5 rounded bg-accent text-[10px] font-semibold text-white">
+                        {e.date ? formatMonth(e.date) : "TBA"}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
+                    {e.title}
+                  </p>
+                  {e.role && (
+                    <p className="text-xs text-text-muted truncate">
+                      {e.role}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Videos */}
         <LazyVideosCarousel
@@ -360,55 +494,12 @@ export default function CastPage({
           </section>
         )}
 
-        {/* Full filmography */}
-        {sortedCredits.length > 0 && (
-          <section className="mt-10">
-            <h2 className="text-xl font-bold text-text-primary mb-4">
-              Filmography
-            </h2>
-            <div className="bg-bg-card rounded-xl border border-border overflow-hidden">
-              {sortedCredits.map((credit, i) => {
-                const title =
-                  credit.media_type === "movie"
-                    ? (credit.title ?? "")
-                    : (credit.name ?? "");
-                const href =
-                  credit.media_type === "movie"
-                    ? movieHref({ id: credit.id, title })
-                    : tvHref({ id: credit.id, name: title });
-                const year =
-                  credit.media_type === "movie"
-                    ? credit.release_date?.split("-")[0]
-                    : credit.first_air_date?.split("-")[0];
-
-                return (
-                  <Link
-                    key={`${credit.media_type}-${credit.id}`}
-                    href={href}
-                    className={`flex items-center gap-4 px-4 py-3 hover:bg-bg-hover transition-colors ${
-                      i > 0 ? "border-t border-border" : ""
-                    }`}
-                  >
-                    <span className="text-sm text-text-muted w-12 flex-shrink-0 text-right">
-                      {year || "—"}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] font-semibold text-text-muted uppercase flex-shrink-0">
-                      {credit.media_type === "movie" ? "Film" : "TV"}
-                    </span>
-                    <span className="text-sm text-text-primary font-medium truncate">
-                      {title}
-                    </span>
-                    {credit.character && (
-                      <span className="text-sm text-text-muted truncate ml-auto flex-shrink-0">
-                        as {credit.character}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        <CastFilmography
+          key={`filmography-${person.id}`}
+          entries={filmography}
+          birthday={person.birthday}
+          deathday={person.deathday}
+        />
       </div>
     </Layout>
   );
