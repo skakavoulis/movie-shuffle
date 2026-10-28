@@ -141,6 +141,24 @@ export default function MoviePage({
   const tmdbRating = movie.vote_average?.toFixed(1);
   const director = movie.credits?.crew?.find((c) => c.job === "Director");
   const cast = movie.credits?.cast?.slice(0, 12) ?? [];
+  // Directors lead the cast row, then the cast by billing.
+  const directors = (movie.credits?.crew ?? [])
+    .filter((c) => c.job === "Director")
+    .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i);
+  const people = [
+    ...directors.map((d) => ({
+      key: `director-${d.id}`,
+      person: d,
+      role: "Director",
+      isCrew: true,
+    })),
+    ...cast.map((m) => ({
+      key: `cast-${m.id}`,
+      person: m,
+      role: m.character,
+      isCrew: false,
+    })),
+  ];
   const trailer = movie.videos?.results?.find(
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
@@ -378,15 +396,15 @@ export default function MoviePage({
         />
 
         {/* Cast */}
-        {cast.length > 0 && (
+        {people.length > 0 && (
           <section className="mt-12">
             <h2 className="text-xl md:text-2xl font-bold text-text-primary mb-6">
               Cast
             </h2>
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
-              {cast.map((member) => (
+              {people.map(({ key, person: member, role, isCrew }) => (
                 <Link
-                  key={member.id}
+                  key={key}
                   href={personHref(member)}
                   className="flex-shrink-0 w-[120px] text-center group"
                 >
@@ -408,8 +426,12 @@ export default function MoviePage({
                   <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
                     {member.name}
                   </p>
-                  <p className="text-xs text-text-muted truncate">
-                    {member.character}
+                  <p
+                    className={`text-xs truncate ${
+                      isCrew ? "text-accent font-semibold" : "text-text-muted"
+                    }`}
+                  >
+                    {role}
                   </p>
                 </Link>
               ))}
