@@ -20,7 +20,7 @@ import {
 } from "@/lib/tmdb";
 import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
 import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
-import { getDoubleFeature, type DoubleFeature } from "@/lib/doubleFeature";
+import { getMovieDoubleFeature, type DoubleFeature } from "@/lib/doubleFeature";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -83,7 +83,7 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
     const [{ movie, collection, doubleFeature }, wikidata] = await Promise.all([
       getMovieDetails(movieId).then(async (movie) => {
         const collection = await getFranchise(movie);
-        const doubleFeature = await getDoubleFeature(
+        const doubleFeature = await getMovieDoubleFeature(
           movie,
           collection?.parts.map((p) => p.id) ?? [],
         ).catch(() => null);

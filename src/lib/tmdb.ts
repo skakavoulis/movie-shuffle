@@ -69,6 +69,8 @@ export interface TMDBTVShow {
   vote_average: number;
   first_air_date: string;
   genre_ids: number[];
+  /** Present on list results; absent on some trimmed payloads. */
+  vote_count?: number;
 }
 
 export interface TMDBSeasonSummary {
@@ -131,6 +133,10 @@ export interface TMDBTVShowDetails {
     results: TMDBVideo[];
   };
   similar?: {
+    results: TMDBTVShow[];
+  };
+  /** Based on what viewers of this title also watched, unlike `similar`. */
+  recommendations?: {
     results: TMDBTVShow[];
   };
   reviews?: {
@@ -432,7 +438,7 @@ export function orderTitleVideos(videos: TMDBVideo[] = []): TMDBVideo[] {
 export async function getTVShowDetails(id: number) {
   return cached(`tv:${id}`, () =>
     tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
-      append_to_response: "credits,videos,similar,reviews",
+      append_to_response: "credits,videos,similar,recommendations,reviews",
     }),
   );
 }
@@ -771,6 +777,29 @@ export async function getPersonMovieCredits(id: number) {
     tmdbFetch<TMDBPersonMovieCredits>(`/person/${id}`, {
       append_to_response: "movie_credits",
     }),
+  );
+}
+
+export interface TMDBPersonTVCastCredit extends TMDBTVShow {
+  character: string;
+  episode_count: number;
+  vote_count: number;
+}
+
+export interface TMDBPersonTVCrewCredit extends TMDBTVShow {
+  job: string;
+  vote_count: number;
+}
+
+export interface TMDBPersonTVCredits {
+  id: number;
+  cast: TMDBPersonTVCastCredit[];
+  crew: TMDBPersonTVCrewCredit[];
+}
+
+export async function getPersonTVCredits(id: number) {
+  return cached(`person:${id}:tv_credits`, () =>
+    tmdbFetch<TMDBPersonTVCredits>(`/person/${id}/tv_credits`),
   );
 }
 

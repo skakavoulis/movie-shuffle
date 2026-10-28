@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { movieHref, posterUrl } from "@/lib/tmdb";
+import { movieHref, posterUrl, tvHref } from "@/lib/tmdb";
 import type { DoubleFeature } from "@/lib/doubleFeature";
 
 interface DoubleFeatureSectionProps {
@@ -26,8 +26,12 @@ export default function DoubleFeatureSection({
   current,
   feature,
 }: DoubleFeatureSectionProps) {
-  const { movie, label, reason } = feature;
-  const year = movie.release_date?.split("-")[0];
+  const { pick, label, reason } = feature;
+  const year = pick.date?.split("-")[0];
+  const href =
+    pick.mediaType === "movie"
+      ? movieHref({ id: pick.id, title: pick.title })
+      : tvHref({ id: pick.id, name: pick.title });
 
   return (
     <section className="mt-12">
@@ -35,20 +39,20 @@ export default function DoubleFeatureSection({
         Double Feature
       </h2>
       <Link
-        href={movieHref(movie)}
+        href={href}
         className="group flex flex-col sm:flex-row sm:items-center gap-6 p-5 rounded-xl bg-bg-card ring-1 ring-white/5 hover:ring-accent/50 transition-all"
       >
         <div className="flex items-center gap-3">
           <Poster src={current.poster_path} alt={current.title} />
           <span className="text-2xl font-bold text-text-muted">+</span>
-          <Poster src={movie.poster_path} alt={movie.title} />
+          <Poster src={pick.poster_path} alt={pick.title} />
         </div>
         <div className="min-w-0">
           <span className="inline-block px-2 py-0.5 rounded bg-accent/15 text-xs font-semibold text-accent uppercase tracking-wide">
             {label}
           </span>
           <p className="mt-2 text-lg font-bold text-text-primary group-hover:text-accent transition-colors">
-            Pair it with {movie.title}
+            Pair it with {pick.title}
             {year && (
               <span className="font-normal text-text-muted"> ({year})</span>
             )}

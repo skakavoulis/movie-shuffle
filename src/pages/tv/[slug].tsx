@@ -20,6 +20,7 @@ import {
 import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
 import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
 import { getTVFranchise } from "@/lib/franchise";
+import { getTVDoubleFeature, type DoubleFeature } from "@/lib/doubleFeature";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -35,6 +36,7 @@ import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 import TitleQuickFacts from "@/components/TitleQuickFacts";
 import FranchiseTimeline from "@/components/FranchiseTimeline";
+import DoubleFeatureSection from "@/components/DoubleFeatureSection";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
@@ -42,6 +44,7 @@ interface TVPageProps {
   facts: TitleFacts | null;
   /** Related series and movies, when Wikidata links at least one. */
   franchise: Franchise | null;
+  doubleFeature: DoubleFeature | null;
 }
 
 /**
@@ -61,7 +64,8 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
   }
 
   try {
-    // In parallel: the facts and franchise lookups only need the id.
+    // In parallel: the facts and franchise lookups only need the id. The
+    // double feature skips franchise parts, so it waits for both.
     const [show, wikidata, related] = await Promise.all([
       getTVShowDetails(showId),
       getTitleFacts("tv", showId),
@@ -84,11 +88,20 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
       "Cache-Control",
       wikidata && related ? CDN_LONG : CDN_MEDIUM,
     );
+    const franchise = related?.franchise ?? null;
+    const doubleFeature = await getTVDoubleFeature(
+      show,
+      franchise?.parts
+        .filter((p) => p.mediaType === "tv")
+        .map((p) => p.id) ?? [],
+    ).catch(() => null);
+
     return {
       props: {
         show,
         facts: wikidata?.facts ?? null,
-        franchise: related?.franchise ?? null,
+        franchise,
+        doubleFeature,
       },
     };
   } catch {
@@ -100,6 +113,7 @@ export default function TVShowPage({
   show,
   facts,
   franchise,
+  doubleFeature,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
@@ -110,9 +124,12 @@ export default function TVShowPage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const similar = (show.similar?.results ?? [])
-    .slice(0, 15)
-    .map(tvShowToMediaItem);
+  // Recommendations follow what viewers also watched; `similar` is mostly
+  // genre overlap, so it's only the fallback for titles with no recommendations.
+  const recommendations = show.recommendations?.results?.length
+    ? show.recommendations.results
+    : (show.similar?.results ?? []);
+  const ifYouLiked = recommendations.slice(0, 15).map(tvShowToMediaItem);
 
   const [trailerOpen, setTrailerOpen] = useState(false);
 
@@ -362,6 +379,14 @@ export default function TVShowPage({
           name={show.name}
         />
 
+        {/* Double feature */}
+        {doubleFeature && (
+          <DoubleFeatureSection
+            current={{ title: show.name, poster_path: show.poster_path }}
+            feature={doubleFeature}
+          />
+        )}
+
         {/* Seasons & episodes */}
         <SeasonsSection showId={show.id} seasons={show.seasons ?? []} />
 
@@ -417,9 +442,9 @@ export default function TVShowPage({
           totalResults={show.reviews?.total_results ?? 0}
         />
 
-        {/* Similar shows */}
-        {similar.length > 0 && (
-          <CarouselSection title="Similar Shows" items={similar} />
+        {/* If you liked this */}
+        {ifYouLiked.length > 0 && (
+          <CarouselSection title="If You Liked This" items={ifYouLiked} />
         )}
       </div>
 
