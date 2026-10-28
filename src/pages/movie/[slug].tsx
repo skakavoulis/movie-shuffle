@@ -16,7 +16,8 @@ import {
   personHref,
   type TMDBMovieDetails,
 } from "@/lib/tmdb";
-import { CDN_LONG } from "@/lib/cdnCache";
+import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
+import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -29,9 +30,12 @@ import LazyVideosCarousel from "@/components/LazyVideosCarousel";
 import LazyImageGallery from "@/components/LazyImageGallery";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
+import TitleQuickFacts from "@/components/TitleQuickFacts";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
+  /** Null when Wikidata has no item for the title or didn't answer in time. */
+  facts: TitleFacts | null;
 }
 
 /**
@@ -51,7 +55,11 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
   }
 
   try {
-    const movie = await getMovieDetails(movieId);
+    // In parallel: the facts lookup only needs the id.
+    const [movie, wikidata] = await Promise.all([
+      getMovieDetails(movieId),
+      getTitleFacts("movie", movieId),
+    ]);
 
     const canonicalSlug = movieSlug(movie);
     if (slug !== canonicalSlug) {
@@ -63,8 +71,10 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
       };
     }
 
-    res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { movie } };
+    // Missing facts may be a slow first Wikidata fetch that is still filling
+    // the cache; let the CDN re-render sooner to pick them up.
+    res.setHeader("Cache-Control", wikidata ? CDN_LONG : CDN_MEDIUM);
+    return { props: { movie, facts: wikidata?.facts ?? null } };
   } catch {
     return { notFound: true };
   }
@@ -84,6 +94,7 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
+  facts,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
@@ -236,32 +247,21 @@ export default function MoviePage({
             </p>
 
             {/* Quick facts */}
-            <div className="flex flex-wrap gap-x-8 gap-y-3 mt-6 text-sm">
-              {director && (
-                <div>
-                  <span className="text-text-muted">Director</span>
-                  <p className="text-text-primary font-medium">
-                    {director.name}
-                  </p>
-                </div>
-              )}
-              {formatCurrency(movie.budget) && (
-                <div>
-                  <span className="text-text-muted">Budget</span>
-                  <p className="text-text-primary font-medium">
-                    {formatCurrency(movie.budget)}
-                  </p>
-                </div>
-              )}
-              {formatCurrency(movie.revenue) && (
-                <div>
-                  <span className="text-text-muted">Revenue</span>
-                  <p className="text-text-primary font-medium">
-                    {formatCurrency(movie.revenue)}
-                  </p>
-                </div>
-              )}
-            </div>
+            <TitleQuickFacts
+              mediaType="movie"
+              wikidata={facts}
+              facts={[
+                director && { term: "Director", value: director.name },
+                formatCurrency(movie.budget) && {
+                  term: "Budget",
+                  value: formatCurrency(movie.budget),
+                },
+                formatCurrency(movie.revenue) && {
+                  term: "Revenue",
+                  value: formatCurrency(movie.revenue),
+                },
+              ]}
+            />
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 mt-6">
