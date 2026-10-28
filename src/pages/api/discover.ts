@@ -76,6 +76,9 @@ export default async function handler(
     if (q["with_genres"]) {
       params["with_genres"] = String(q["with_genres"]);
     }
+    if (q["with_keywords"]) {
+      params["with_keywords"] = String(q["with_keywords"]);
+    }
     if (q["with_watch_providers"]) {
       params["with_watch_providers"] = String(q["with_watch_providers"]);
       params["watch_region"] = String(q["watch_region"] || "US");

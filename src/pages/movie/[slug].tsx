@@ -36,6 +36,7 @@ import TitleExternalRatings from "@/components/TitleExternalRatings";
 import TitleQuickFacts from "@/components/TitleQuickFacts";
 import FranchiseTimeline from "@/components/FranchiseTimeline";
 import DoubleFeatureSection from "@/components/DoubleFeatureSection";
+import KeywordChips from "@/components/KeywordChips";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
@@ -301,6 +302,13 @@ export default function MoviePage({
                 ))}
               </div>
             )}
+
+            {/* Keywords */}
+            <KeywordChips
+              mediaType="movie"
+              mediaId={movie.id}
+              keywords={movie.keywords?.keywords ?? []}
+            />
 
             {/* Overview */}
             <p className="mt-6 text-base md:text-lg text-text-primary/90 leading-relaxed max-w-3xl">

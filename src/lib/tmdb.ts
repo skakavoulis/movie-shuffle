@@ -240,6 +240,14 @@ export interface TMDBMovieDetails {
     results: TMDBReview[];
     total_results: number;
   };
+  keywords?: {
+    keywords: TMDBKeyword[];
+  };
+}
+
+export interface TMDBKeyword {
+  id: number;
+  name: string;
 }
 
 interface TMDBListResponse {
@@ -291,9 +299,11 @@ export async function getTrendingMovies() {
 }
 
 export async function getMovieDetails(id: number) {
-  return cached(`movie:${id}`, () =>
+  // Versioned so entries cached before keywords were appended refetch.
+  return cached(`movie:v2:${id}`, () =>
     tmdbFetch<TMDBMovieDetails>(`/movie/${id}`, {
-      append_to_response: "credits,videos,similar,recommendations,reviews",
+      append_to_response:
+        "credits,videos,similar,recommendations,reviews,keywords",
     }),
   );
 }

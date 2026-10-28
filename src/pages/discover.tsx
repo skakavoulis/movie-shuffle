@@ -110,15 +110,50 @@ function loadMediaType(): DiscoverMediaType | null {
   return null;
 }
 
+// ─── Keyword deck from the URL ───────────────────────────────────────
+
+interface DiscoverKeyword {
+  id: number;
+  name: string;
+}
+
+/**
+ * Title pages link here with `?keyword=&keywordName=&type=&exclude=` to open
+ * a deck of titles sharing one TMDB keyword. It's read from the location
+ * rather than the router because the page is static and the router query is
+ * still empty on the first effect.
+ */
+function readKeywordDeck(): {
+  keyword: DiscoverKeyword;
+  mediaType: DiscoverMediaType;
+  exclude: string | null;
+} | null {
+  const q = new URLSearchParams(window.location.search);
+  const id = Number(q.get("keyword"));
+  if (!Number.isInteger(id) || id <= 0) return null;
+  const mediaType: DiscoverMediaType = q.get("type") === "tv" ? "tv" : "movie";
+  const exclude = Number(q.get("exclude"));
+  return {
+    keyword: { id, name: q.get("keywordName") || "this keyword" },
+    mediaType,
+    exclude: exclude > 0 ? `${mediaType}:${exclude}` : null,
+  };
+}
+
 // ─── API helpers ─────────────────────────────────────────────────────
 
 function buildFilterParams(
   mediaType: DiscoverMediaType,
   filters: DiscoverFilters,
   region: string,
+  keyword: DiscoverKeyword | null,
 ): string {
   const params = new URLSearchParams();
   params.set("type", mediaType);
+
+  if (keyword) {
+    params.set("with_keywords", String(keyword.id));
+  }
 
   if (filters.releaseYearGte) {
     const dateKey =
@@ -170,6 +205,9 @@ export default function DiscoverPage() {
   const [filters, setFilters] = useState<DiscoverFilters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [likeBurst, setLikeBurst] = useState(false);
+  // A keyword deck opened from a title page. Its filters start clear and
+  // aren't saved, so the user's own filters are back once it's cleared.
+  const [keyword, setKeyword] = useState<DiscoverKeyword | null>(null);
 
   // ── Refs ──
   const sessionSeen = useRef<Set<string>>(new Set());
@@ -184,9 +222,13 @@ export default function DiscoverPage() {
   const throwTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const dragState = useRef({ active: false, startX: 0, startY: 0, dx: 0 });
   const hydratedRef = useRef(false);
+  const keywordRef = useRef(keyword);
+  /** The title the keyword deck was opened from, as `type:id`. */
+  const excludeRef = useRef<string | null>(null);
 
   filtersRef.current = filters;
   mediaTypeRef.current = mediaType;
+  keywordRef.current = keyword;
 
   const { isLiked, toggleLike } = useLikes();
   const { getStatus: getWatchlistStatus } = useWatchlist();
@@ -233,6 +275,7 @@ export default function DiscoverPage() {
         mediaTypeRef.current,
         filtersRef.current,
         regionRef.current,
+        keywordRef.current,
       );
       let fresh: DiscoverItem[] = [];
 
@@ -257,6 +300,8 @@ export default function DiscoverPage() {
           sessionSeen.current,
           isLikedRef.current,
           getWatchlistStatusRef.current,
+        ).filter(
+          (m) => `${mediaTypeRef.current}:${m.id}` !== excludeRef.current,
         );
 
         if (exhaustedRef.current) break;
@@ -298,8 +343,14 @@ export default function DiscoverPage() {
 
   // Hydrate persisted state on mount
   useEffect(() => {
-    const savedType = loadMediaType();
-    const savedFilters = loadFilters();
+    const deck = readKeywordDeck();
+    const savedType = deck ? deck.mediaType : loadMediaType();
+    const savedFilters = deck ? null : loadFilters();
+    if (deck) {
+      keywordRef.current = deck.keyword;
+      setKeyword(deck.keyword);
+      excludeRef.current = deck.exclude;
+    }
     if (savedType && savedType !== mediaTypeRef.current) {
       mediaTypeRef.current = savedType;
       setMediaType(savedType);
@@ -321,14 +372,14 @@ export default function DiscoverPage() {
 
   // Persist filters & media type
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (!hydratedRef.current || keywordRef.current) return;
     try {
       localStorage.setItem(STORAGE_KEY_FILTERS, JSON.stringify(filters));
     } catch {}
   }, [filters]);
 
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (!hydratedRef.current || keywordRef.current) return;
     try {
       localStorage.setItem(STORAGE_KEY_MEDIA_TYPE, mediaType);
     } catch {}
@@ -363,6 +414,17 @@ export default function DiscoverPage() {
     (newFilters: DiscoverFilters) => resetAndFetch(newFilters),
     [resetAndFetch],
   );
+
+  const clearKeyword = useCallback(() => {
+    keywordRef.current = null;
+    excludeRef.current = null;
+    setKeyword(null);
+    router.replace("/discover", undefined, { shallow: true });
+    resetAndFetch(
+      loadFilters() ?? DEFAULT_FILTERS,
+      loadMediaType() ?? mediaTypeRef.current,
+    );
+  }, [router, resetAndFetch]);
 
   const advanceQueue = useCallback(() => {
     if (!throwingRef.current) return;
@@ -533,6 +595,8 @@ export default function DiscoverPage() {
         <Header
           filterCount={filterCount}
           onOpenFilters={() => setFiltersOpen(true)}
+          keyword={keyword}
+          onClearKeyword={clearKeyword}
         />
 
         {!user && <SignInPrompt />}
@@ -597,9 +661,13 @@ export default function DiscoverPage() {
 function Header({
   filterCount,
   onOpenFilters,
+  keyword,
+  onClearKeyword,
 }: {
   filterCount: number;
   onOpenFilters: () => void;
+  keyword: DiscoverKeyword | null;
+  onClearKeyword: () => void;
 }) {
   return (
     <>
@@ -620,6 +688,18 @@ function Header({
             </span>
           )}
         </button>
+        {keyword && (
+          <span className="flex items-center gap-1 pl-3 pr-1 py-1 rounded-lg text-sm font-medium bg-accent/15 text-accent border border-accent/30">
+            #{keyword.name}
+            <button
+              onClick={onClearKeyword}
+              aria-label={`Stop filtering by ${keyword.name}`}
+              className="w-5 h-5 rounded flex items-center justify-center hover:bg-accent/20 transition-colors"
+            >
+              &times;
+            </button>
+          </span>
+        )}
       </div>
       <span className="mt-4 text-xs text-text-muted text-center leading-relaxed flex-shrink-0">
         Swipe right to like, left to skip
