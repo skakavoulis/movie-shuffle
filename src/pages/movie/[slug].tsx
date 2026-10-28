@@ -7,6 +7,7 @@ import type {
 } from "next";
 import {
   getMovieDetails,
+  getCollection,
   parseMovieIdFromSlug,
   movieSlug,
   posterUrl,
@@ -15,8 +16,10 @@ import {
   movieToMediaItem,
   personHref,
   type TMDBMovieDetails,
+  type TMDBCollection,
 } from "@/lib/tmdb";
-import { CDN_LONG } from "@/lib/cdnCache";
+import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
+import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -29,9 +32,29 @@ import LazyVideosCarousel from "@/components/LazyVideosCarousel";
 import LazyImageGallery from "@/components/LazyImageGallery";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
+import TitleQuickFacts from "@/components/TitleQuickFacts";
+import FranchiseTimeline from "@/components/FranchiseTimeline";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
+  /** Null when Wikidata has no item for the title or didn't answer in time. */
+  facts: TitleFacts | null;
+  /** The movie's franchise, when it has at least one other part. */
+  collection: TMDBCollection | null;
+}
+
+/** Null rather than throwing: a missing franchise strip shouldn't 404 the page. */
+async function getFranchise(
+  movie: TMDBMovieDetails,
+): Promise<TMDBCollection | null> {
+  const ref = movie.belongs_to_collection;
+  if (!ref) return null;
+  try {
+    const collection = await getCollection(ref.id);
+    return collection.parts.length > 1 ? collection : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -51,7 +74,15 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
   }
 
   try {
-    const movie = await getMovieDetails(movieId);
+    // In parallel: the facts lookup only needs the id, and the franchise
+    // only needs the details.
+    const [{ movie, collection }, wikidata] = await Promise.all([
+      getMovieDetails(movieId).then(async (movie) => ({
+        movie,
+        collection: await getFranchise(movie),
+      })),
+      getTitleFacts("movie", movieId),
+    ]);
 
     const canonicalSlug = movieSlug(movie);
     if (slug !== canonicalSlug) {
@@ -63,8 +94,12 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
       };
     }
 
-    res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { movie } };
+    // Missing facts may be a slow first Wikidata fetch that is still filling
+    // the cache; let the CDN re-render sooner to pick them up.
+    res.setHeader("Cache-Control", wikidata ? CDN_LONG : CDN_MEDIUM);
+    return {
+      props: { movie, facts: wikidata?.facts ?? null, collection },
+    };
   } catch {
     return { notFound: true };
   }
@@ -84,6 +119,8 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
+  facts,
+  collection,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
@@ -236,32 +273,21 @@ export default function MoviePage({
             </p>
 
             {/* Quick facts */}
-            <div className="flex flex-wrap gap-x-8 gap-y-3 mt-6 text-sm">
-              {director && (
-                <div>
-                  <span className="text-text-muted">Director</span>
-                  <p className="text-text-primary font-medium">
-                    {director.name}
-                  </p>
-                </div>
-              )}
-              {formatCurrency(movie.budget) && (
-                <div>
-                  <span className="text-text-muted">Budget</span>
-                  <p className="text-text-primary font-medium">
-                    {formatCurrency(movie.budget)}
-                  </p>
-                </div>
-              )}
-              {formatCurrency(movie.revenue) && (
-                <div>
-                  <span className="text-text-muted">Revenue</span>
-                  <p className="text-text-primary font-medium">
-                    {formatCurrency(movie.revenue)}
-                  </p>
-                </div>
-              )}
-            </div>
+            <TitleQuickFacts
+              mediaType="movie"
+              wikidata={facts}
+              facts={[
+                director && { term: "Director", value: director.name },
+                formatCurrency(movie.budget) && {
+                  term: "Budget",
+                  value: formatCurrency(movie.budget),
+                },
+                formatCurrency(movie.revenue) && {
+                  term: "Revenue",
+                  value: formatCurrency(movie.revenue),
+                },
+              ]}
+            />
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 mt-6">
@@ -318,6 +344,11 @@ export default function MoviePage({
           src={`/api/title-videos?mediaType=movie&id=${movie.id}`}
           paused={trailerOpen}
         />
+
+        {/* Franchise */}
+        {collection && (
+          <FranchiseTimeline collection={collection} currentId={movie.id} />
+        )}
 
         {/* Images */}
         <LazyImageGallery

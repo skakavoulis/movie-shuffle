@@ -16,7 +16,8 @@ import {
   personHref,
   type TMDBTVShowDetails,
 } from "@/lib/tmdb";
-import { CDN_LONG } from "@/lib/cdnCache";
+import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
+import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -30,9 +31,12 @@ import LazyImageGallery from "@/components/LazyImageGallery";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
+import TitleQuickFacts from "@/components/TitleQuickFacts";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
+  /** Null when Wikidata has no item for the title or didn't answer in time. */
+  facts: TitleFacts | null;
 }
 
 /**
@@ -52,7 +56,11 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
   }
 
   try {
-    const show = await getTVShowDetails(showId);
+    // In parallel: the facts lookup only needs the id.
+    const [show, wikidata] = await Promise.all([
+      getTVShowDetails(showId),
+      getTitleFacts("tv", showId),
+    ]);
 
     const canonicalSlug = tvSlug(show);
     if (slug !== canonicalSlug) {
@@ -64,8 +72,10 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
       };
     }
 
-    res.setHeader("Cache-Control", CDN_LONG);
-    return { props: { show } };
+    // Missing facts may be a slow first Wikidata fetch that is still filling
+    // the cache; let the CDN re-render sooner to pick them up.
+    res.setHeader("Cache-Control", wikidata ? CDN_LONG : CDN_MEDIUM);
+    return { props: { show, facts: wikidata?.facts ?? null } };
   } catch {
     return { notFound: true };
   }
@@ -73,6 +83,7 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
 
 export default function TVShowPage({
   show,
+  facts,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
@@ -245,26 +256,20 @@ export default function TVShowPage({
             </p>
 
             {/* Quick facts */}
-            <div className="flex flex-wrap gap-x-8 gap-y-3 mt-6 text-sm">
-              {creators.length > 0 && (
-                <div>
-                  <span className="text-text-muted">
-                    {creators.length === 1 ? "Creator" : "Creators"}
-                  </span>
-                  <p className="text-text-primary font-medium">
-                    {creators.map((c) => c.name).join(", ")}
-                  </p>
-                </div>
-              )}
-              {show.networks?.length > 0 && (
-                <div>
-                  <span className="text-text-muted">Network</span>
-                  <p className="text-text-primary font-medium">
-                    {show.networks.map((n) => n.name).join(", ")}
-                  </p>
-                </div>
-              )}
-            </div>
+            <TitleQuickFacts
+              mediaType="tv"
+              wikidata={facts}
+              facts={[
+                creators.length > 0 && {
+                  term: creators.length === 1 ? "Creator" : "Creators",
+                  value: creators.map((c) => c.name).join(", "),
+                },
+                show.networks?.length > 0 && {
+                  term: "Network",
+                  value: show.networks.map((n) => n.name).join(", "),
+                },
+              ]}
+            />
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 mt-6">
