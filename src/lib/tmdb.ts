@@ -214,6 +214,10 @@ export interface TMDBMovieDetails {
   similar?: {
     results: TMDBMovie[];
   };
+  /** Based on what viewers of this title also watched, unlike `similar`. */
+  recommendations?: {
+    results: TMDBMovie[];
+  };
   reviews?: {
     results: TMDBReview[];
     total_results: number;
@@ -271,7 +275,7 @@ export async function getTrendingMovies() {
 export async function getMovieDetails(id: number) {
   return cached(`movie:${id}`, () =>
     tmdbFetch<TMDBMovieDetails>(`/movie/${id}`, {
-      append_to_response: "credits,videos,similar,reviews",
+      append_to_response: "credits,videos,similar,recommendations,reviews",
     }),
   );
 }

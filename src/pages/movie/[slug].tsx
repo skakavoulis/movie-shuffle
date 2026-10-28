@@ -131,9 +131,12 @@ export default function MoviePage({
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
   );
-  const similar = (movie.similar?.results ?? [])
-    .slice(0, 15)
-    .map(movieToMediaItem);
+  // Recommendations follow what viewers also watched; `similar` is mostly
+  // genre overlap, so it's only the fallback for titles with no recommendations.
+  const recommendations = movie.recommendations?.results?.length
+    ? movie.recommendations.results
+    : (movie.similar?.results ?? []);
+  const ifYouLiked = recommendations.slice(0, 15).map(movieToMediaItem);
 
   const [trailerOpen, setTrailerOpen] = useState(false);
 
@@ -412,9 +415,9 @@ export default function MoviePage({
           totalResults={movie.reviews?.total_results ?? 0}
         />
 
-        {/* Similar movies */}
-        {similar.length > 0 && (
-          <CarouselSection title="Similar Movies" items={similar} />
+        {/* If you liked this */}
+        {ifYouLiked.length > 0 && (
+          <CarouselSection title="If You Liked This" items={ifYouLiked} />
         )}
       </div>
 
