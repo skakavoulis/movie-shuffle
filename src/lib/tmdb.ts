@@ -10,6 +10,8 @@ export interface TMDBMovie {
   vote_average: number;
   release_date: string;
   genre_ids: number[];
+  /** Present on list results; absent on some trimmed payloads. */
+  vote_count?: number;
 }
 
 export interface TMDBGenre {
@@ -742,6 +744,14 @@ export interface TMDBPersonMovieCrewCredit extends TMDBMovie {
   video: boolean;
 }
 
+export interface TMDBPersonMovieCastCredit extends TMDBMovie {
+  character: string;
+  /** Billing position, 0 for the lead. */
+  order: number;
+  vote_count: number;
+  video: boolean;
+}
+
 export interface TMDBPersonMovieCredits {
   id: number;
   name: string;
@@ -751,6 +761,7 @@ export interface TMDBPersonMovieCredits {
   deathday: string | null;
   place_of_birth: string | null;
   movie_credits?: {
+    cast: TMDBPersonMovieCastCredit[];
     crew: TMDBPersonMovieCrewCredit[];
   };
 }
