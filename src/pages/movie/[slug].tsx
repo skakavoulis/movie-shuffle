@@ -7,6 +7,7 @@ import type {
 } from "next";
 import {
   getMovieDetails,
+  getCollection,
   parseMovieIdFromSlug,
   movieSlug,
   posterUrl,
@@ -15,6 +16,7 @@ import {
   movieToMediaItem,
   personHref,
   type TMDBMovieDetails,
+  type TMDBCollection,
 } from "@/lib/tmdb";
 import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
 import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
@@ -31,11 +33,28 @@ import LazyImageGallery from "@/components/LazyImageGallery";
 import YouTubeEmbed from "@/components/YouTubeEmbed";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 import TitleQuickFacts from "@/components/TitleQuickFacts";
+import FranchiseTimeline from "@/components/FranchiseTimeline";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
   /** Null when Wikidata has no item for the title or didn't answer in time. */
   facts: TitleFacts | null;
+  /** The movie's franchise, when it has at least one other part. */
+  collection: TMDBCollection | null;
+}
+
+/** Null rather than throwing: a missing franchise strip shouldn't 404 the page. */
+async function getFranchise(
+  movie: TMDBMovieDetails,
+): Promise<TMDBCollection | null> {
+  const ref = movie.belongs_to_collection;
+  if (!ref) return null;
+  try {
+    const collection = await getCollection(ref.id);
+    return collection.parts.length > 1 ? collection : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -55,9 +74,13 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
   }
 
   try {
-    // In parallel: the facts lookup only needs the id.
-    const [movie, wikidata] = await Promise.all([
-      getMovieDetails(movieId),
+    // In parallel: the facts lookup only needs the id, and the franchise
+    // only needs the details.
+    const [{ movie, collection }, wikidata] = await Promise.all([
+      getMovieDetails(movieId).then(async (movie) => ({
+        movie,
+        collection: await getFranchise(movie),
+      })),
       getTitleFacts("movie", movieId),
     ]);
 
@@ -74,7 +97,9 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
     // Missing facts may be a slow first Wikidata fetch that is still filling
     // the cache; let the CDN re-render sooner to pick them up.
     res.setHeader("Cache-Control", wikidata ? CDN_LONG : CDN_MEDIUM);
-    return { props: { movie, facts: wikidata?.facts ?? null } };
+    return {
+      props: { movie, facts: wikidata?.facts ?? null, collection },
+    };
   } catch {
     return { notFound: true };
   }
@@ -95,6 +120,7 @@ function formatCurrency(amount: number) {
 export default function MoviePage({
   movie,
   facts,
+  collection,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
@@ -318,6 +344,11 @@ export default function MoviePage({
           src={`/api/title-videos?mediaType=movie&id=${movie.id}`}
           paused={trailerOpen}
         />
+
+        {/* Franchise */}
+        {collection && (
+          <FranchiseTimeline collection={collection} currentId={movie.id} />
+        )}
 
         {/* Images */}
         <LazyImageGallery

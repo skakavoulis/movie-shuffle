@@ -198,6 +198,12 @@ export interface TMDBMovieDetails {
   }[];
   budget: number;
   revenue: number;
+  belongs_to_collection: {
+    id: number;
+    name: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+  } | null;
   credits?: {
     cast: TMDBCastMember[];
     crew: TMDBCrewMember[];
@@ -268,6 +274,46 @@ export async function getMovieDetails(id: number) {
       append_to_response: "credits,videos,similar,reviews",
     }),
   );
+}
+
+/** A franchise's movies, trimmed to what the timeline renders. */
+export interface TMDBCollection {
+  id: number;
+  name: string;
+  /** Ordered by release date; undated (unannounced) parts come last. */
+  parts: Pick<
+    TMDBMovie,
+    "id" | "title" | "poster_path" | "release_date" | "vote_average"
+  >[];
+}
+
+function byReleaseDate(a: TMDBMovie, z: TMDBMovie) {
+  if (!a.release_date) return z.release_date ? 1 : 0;
+  if (!z.release_date) return -1;
+  return a.release_date.localeCompare(z.release_date);
+}
+
+export async function getCollection(id: number): Promise<TMDBCollection> {
+  return cached(`collection:${id}`, async () => {
+    const data = await tmdbFetch<{
+      id: number;
+      name: string;
+      parts: TMDBMovie[];
+    }>(`/collection/${id}`);
+    return {
+      id: data.id,
+      name: data.name,
+      parts: [...data.parts]
+        .sort(byReleaseDate)
+        .map(({ id, title, poster_path, release_date, vote_average }) => ({
+          id,
+          title,
+          poster_path,
+          release_date,
+          vote_average,
+        })),
+    };
+  });
 }
 
 interface TMDBTVListResponse {
