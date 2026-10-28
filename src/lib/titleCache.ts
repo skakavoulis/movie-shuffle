@@ -9,12 +9,17 @@ interface CacheRow<T> {
   expires_at: string;
 }
 
-interface TitleCacheOptions {
+interface TitleCacheOptions<T> {
   /** Supabase table keyed by (media_type, tmdb_id) with data/fetched_at/expires_at columns. */
   table: string;
   ttlSeconds: number;
   /** Prefix for log lines, e.g. "ratings". */
   label: string;
+  /**
+   * Rows failing this are treated as missing and refetched, so a change to
+   * the cached shape takes effect without waiting out the TTL.
+   */
+  isCurrent?: (data: T) => boolean;
 }
 
 let client: SupabaseClient | null | undefined;
@@ -48,7 +53,8 @@ export function createTitleCache<T>({
   table,
   ttlSeconds,
   label,
-}: TitleCacheOptions) {
+  isCurrent,
+}: TitleCacheOptions<T>) {
   const inflight = new Map<string, Promise<T>>();
   const refreshing = new Map<string, Promise<void>>();
 
@@ -72,6 +78,7 @@ export function createTitleCache<T>({
       return null;
     }
     if (!row) return null;
+    if (isCurrent && !isCurrent(row.data)) return null;
 
     return {
       data: row.data,
