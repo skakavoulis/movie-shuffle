@@ -297,8 +297,8 @@ export async function getTVDoubleFeature(
   franchiseIds: number[],
 ): Promise<DoubleFeature | null> {
   const creators = (show.created_by ?? []).slice(0, MAX_MAKERS);
-  const lead = show.credits?.cast?.find((c) => c.order === 0);
-  const includeVoice = isVoiceRole(lead?.character);
+  const lead = show.aggregate_credits?.cast?.find((c) => c.order === 0);
+  const includeVoice = isVoiceRole(lead?.roles[0]?.character);
 
   const [makers, led] = await Promise.all([
     Promise.all(

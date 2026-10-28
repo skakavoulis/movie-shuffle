@@ -27,6 +27,16 @@ export interface TMDBCastMember {
   order: number;
 }
 
+/** A series' cast across all seasons, from `/tv/{id}/aggregate_credits`. */
+export interface TMDBAggregateCastMember {
+  id: number;
+  name: string;
+  profile_path: string | null;
+  roles: { character: string; episode_count: number }[];
+  total_episode_count: number;
+  order: number;
+}
+
 export interface TMDBCrewMember {
   id: number;
   name: string;
@@ -125,9 +135,9 @@ export interface TMDBTVShowDetails {
   networks: { id: number; name: string; logo_path: string | null }[];
   created_by: { id: number; name: string; profile_path: string | null }[];
   seasons?: TMDBSeasonSummary[];
-  credits?: {
-    cast: TMDBCastMember[];
-    crew: TMDBCrewMember[];
+  /** Trimmed to the top-billed cast; crew is dropped. */
+  aggregate_credits?: {
+    cast: TMDBAggregateCastMember[];
   };
   videos?: {
     results: TMDBVideo[];
@@ -435,12 +445,24 @@ export function orderTitleVideos(videos: TMDBVideo[] = []): TMDBVideo[] {
   ];
 }
 
+// `credits` on a series only lists the latest season's cast, so a show like
+// The Office loses most of its regulars; `aggregate_credits` spans every
+// season. It runs to hundreds of guest roles, so only the top billing is kept.
+const TV_CAST_LIMIT = 20;
+
 export async function getTVShowDetails(id: number) {
-  return cached(`tv:${id}`, () =>
-    tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
-      append_to_response: "credits,videos,similar,recommendations,reviews",
-    }),
-  );
+  return cached(`tv:${id}:aggregate`, async () => {
+    const show = await tmdbFetch<TMDBTVShowDetails>(`/tv/${id}`, {
+      append_to_response:
+        "aggregate_credits,videos,similar,recommendations,reviews",
+    });
+    return {
+      ...show,
+      aggregate_credits: {
+        cast: (show.aggregate_credits?.cast ?? []).slice(0, TV_CAST_LIMIT),
+      },
+    };
+  });
 }
 
 /** Episode lists are only exposed per season, never on the show detail payload. */

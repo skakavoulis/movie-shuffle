@@ -119,7 +119,24 @@ export default function TVShowPage({
   const year = show.first_air_date?.split("-")[0] ?? "";
   const tmdbRating = show.vote_average?.toFixed(1);
   const creators = show.created_by ?? [];
-  const cast = show.credits?.cast?.slice(0, 12) ?? [];
+  const cast = show.aggregate_credits?.cast ?? [];
+  // Creators lead the cast row, then the cast by billing.
+  const people = [
+    ...creators.map((c) => ({
+      key: `creator-${c.id}`,
+      person: c,
+      role: "Creator",
+      detail: null,
+    })),
+    ...cast.map((m) => ({
+      key: `cast-${m.id}`,
+      person: m,
+      role: m.roles[0]?.character,
+      detail: `${m.total_episode_count} ${
+        m.total_episode_count === 1 ? "episode" : "episodes"
+      }`,
+    })),
+  ];
   const trailer = show.videos?.results?.find(
     (v) =>
       v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser"),
@@ -391,15 +408,15 @@ export default function TVShowPage({
         <SeasonsSection showId={show.id} seasons={show.seasons ?? []} />
 
         {/* Cast */}
-        {cast.length > 0 && (
+        {people.length > 0 && (
           <section className="mt-12">
             <h2 className="text-xl md:text-2xl font-bold text-text-primary mb-6">
               Cast
             </h2>
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
-              {cast.map((member) => (
+              {people.map(({ key, person: member, role, detail }) => (
                 <Link
-                  key={member.id}
+                  key={key}
                   href={personHref(member)}
                   className="flex-shrink-0 w-[120px] text-center group"
                 >
@@ -421,9 +438,16 @@ export default function TVShowPage({
                   <p className="mt-2 text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
                     {member.name}
                   </p>
-                  <p className="text-xs text-text-muted truncate">
-                    {member.character}
+                  <p
+                    className={`text-xs truncate ${
+                      detail ? "text-text-muted" : "text-accent font-semibold"
+                    }`}
+                  >
+                    {role}
                   </p>
+                  {detail && (
+                    <p className="text-xs text-text-muted/70">{detail}</p>
+                  )}
                 </Link>
               ))}
             </div>
