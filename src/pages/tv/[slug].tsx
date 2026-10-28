@@ -15,9 +15,11 @@ import {
   tvShowToMediaItem,
   personHref,
   type TMDBTVShowDetails,
+  type Franchise,
 } from "@/lib/tmdb";
 import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
 import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
+import { getTVFranchise } from "@/lib/franchise";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -32,11 +34,14 @@ import YouTubeEmbed from "@/components/YouTubeEmbed";
 import SeasonsSection from "@/components/SeasonsSection";
 import TitleExternalRatings from "@/components/TitleExternalRatings";
 import TitleQuickFacts from "@/components/TitleQuickFacts";
+import FranchiseTimeline from "@/components/FranchiseTimeline";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
   /** Null when Wikidata has no item for the title or didn't answer in time. */
   facts: TitleFacts | null;
+  /** Related series and movies, when Wikidata links at least one. */
+  franchise: Franchise | null;
 }
 
 /**
@@ -56,10 +61,11 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
   }
 
   try {
-    // In parallel: the facts lookup only needs the id.
-    const [show, wikidata] = await Promise.all([
+    // In parallel: the facts and franchise lookups only need the id.
+    const [show, wikidata, related] = await Promise.all([
       getTVShowDetails(showId),
       getTitleFacts("tv", showId),
+      getTVFranchise(showId),
     ]);
 
     const canonicalSlug = tvSlug(show);
@@ -72,10 +78,19 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
       };
     }
 
-    // Missing facts may be a slow first Wikidata fetch that is still filling
-    // the cache; let the CDN re-render sooner to pick them up.
-    res.setHeader("Cache-Control", wikidata ? CDN_LONG : CDN_MEDIUM);
-    return { props: { show, facts: wikidata?.facts ?? null } };
+    // Missing facts or franchise may be a slow first fetch that is still
+    // filling the cache; let the CDN re-render sooner to pick them up.
+    res.setHeader(
+      "Cache-Control",
+      wikidata && related ? CDN_LONG : CDN_MEDIUM,
+    );
+    return {
+      props: {
+        show,
+        facts: wikidata?.facts ?? null,
+        franchise: related?.franchise ?? null,
+      },
+    };
   } catch {
     return { notFound: true };
   }
@@ -84,6 +99,7 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
 export default function TVShowPage({
   show,
   facts,
+  franchise,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
@@ -323,6 +339,14 @@ export default function TVShowPage({
             </div>
           </div>
         </div>
+
+        {/* Franchise */}
+        {franchise && (
+          <FranchiseTimeline
+            franchise={franchise}
+            current={{ mediaType: "tv", id: show.id }}
+          />
+        )}
 
         {/* Videos Carousel */}
         <LazyVideosCarousel

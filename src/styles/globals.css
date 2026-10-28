@@ -47,6 +47,7 @@ body {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  padding: 5px;
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;

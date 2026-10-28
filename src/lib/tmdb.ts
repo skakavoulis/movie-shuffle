@@ -276,24 +276,59 @@ export async function getMovieDetails(id: number) {
   );
 }
 
-/** A franchise's movies, trimmed to what the timeline renders. */
-export interface TMDBCollection {
+/**
+ * How a franchise part relates to the title whose page it's shown on, from
+ * that title's point of view. "previous" and "next" are Wikidata's follows /
+ * followed by, which for shared universes means release order rather than
+ * story order.
+ */
+export type FranchiseRelation =
+  | "spinoff"
+  | "spinoffOf"
+  | "previous"
+  | "next"
+  | "franchise";
+
+/** One title in a franchise, trimmed to what the timeline renders. */
+export interface FranchisePart {
+  /** Unset for TMDB collections, where every part is simply a sibling. */
+  relation?: FranchiseRelation;
+  mediaType: "movie" | "tv";
   id: number;
+  title: string;
+  poster_path: string | null;
+  /** Release date for movies, first air date for series; "" when unknown. */
+  release_date: string;
+  vote_average: number;
+}
+
+export interface Franchise {
   name: string;
   /** Ordered by release date; undated (unannounced) parts come last. */
-  parts: Pick<
-    TMDBMovie,
-    "id" | "title" | "poster_path" | "release_date" | "vote_average"
-  >[];
+  parts: FranchisePart[];
 }
 
-function byReleaseDate(a: TMDBMovie, z: TMDBMovie) {
-  if (!a.release_date) return z.release_date ? 1 : 0;
-  if (!z.release_date) return -1;
-  return a.release_date.localeCompare(z.release_date);
+export function sortByReleaseDate(parts: FranchisePart[]): FranchisePart[] {
+  return [...parts].sort((a, z) => {
+    if (!a.release_date) return z.release_date ? 1 : 0;
+    if (!z.release_date) return -1;
+    return a.release_date.localeCompare(z.release_date);
+  });
 }
 
-export async function getCollection(id: number): Promise<TMDBCollection> {
+function movieToFranchisePart(movie: TMDBMovie): FranchisePart {
+  return {
+    mediaType: "movie",
+    id: movie.id,
+    title: movie.title,
+    poster_path: movie.poster_path,
+    release_date: movie.release_date ?? "",
+    vote_average: movie.vote_average,
+  };
+}
+
+/** A TMDB movie collection, e.g. "The Dark Knight Collection". */
+export async function getCollection(id: number): Promise<Franchise> {
   return cached(`collection:${id}`, async () => {
     const data = await tmdbFetch<{
       id: number;
@@ -301,17 +336,40 @@ export async function getCollection(id: number): Promise<TMDBCollection> {
       parts: TMDBMovie[];
     }>(`/collection/${id}`);
     return {
-      id: data.id,
       name: data.name,
-      parts: [...data.parts]
-        .sort(byReleaseDate)
-        .map(({ id, title, poster_path, release_date, vote_average }) => ({
-          id,
-          title,
-          poster_path,
-          release_date,
-          vote_average,
-        })),
+      parts: sortByReleaseDate(data.parts.map(movieToFranchisePart)),
+    };
+  });
+}
+
+/** What a franchise needs to know about any title, without the extras. */
+export interface TitleSummary {
+  part: FranchisePart;
+  vote_count: number;
+}
+
+export async function getTitleSummary(
+  mediaType: "movie" | "tv",
+  id: number,
+): Promise<TitleSummary> {
+  return cached(`${mediaType}:${id}:summary`, async () => {
+    if (mediaType === "movie") {
+      const m = await tmdbFetch<TMDBMovie & { vote_count: number }>(
+        `/movie/${id}`,
+      );
+      return { part: movieToFranchisePart(m), vote_count: m.vote_count };
+    }
+    const t = await tmdbFetch<TMDBTVShow & { vote_count: number }>(`/tv/${id}`);
+    return {
+      part: {
+        mediaType: "tv",
+        id: t.id,
+        title: t.name,
+        poster_path: t.poster_path,
+        release_date: t.first_air_date ?? "",
+        vote_average: t.vote_average,
+      },
+      vote_count: t.vote_count,
     };
   });
 }

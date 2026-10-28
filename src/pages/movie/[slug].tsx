@@ -16,7 +16,7 @@ import {
   movieToMediaItem,
   personHref,
   type TMDBMovieDetails,
-  type TMDBCollection,
+  type Franchise,
 } from "@/lib/tmdb";
 import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
 import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
@@ -40,13 +40,13 @@ interface MoviePageProps {
   /** Null when Wikidata has no item for the title or didn't answer in time. */
   facts: TitleFacts | null;
   /** The movie's franchise, when it has at least one other part. */
-  collection: TMDBCollection | null;
+  collection: Franchise | null;
 }
 
 /** Null rather than throwing: a missing franchise strip shouldn't 404 the page. */
 async function getFranchise(
   movie: TMDBMovieDetails,
-): Promise<TMDBCollection | null> {
+): Promise<Franchise | null> {
   const ref = movie.belongs_to_collection;
   if (!ref) return null;
   try {
@@ -338,17 +338,20 @@ export default function MoviePage({
           </div>
         </div>
 
+        {/* Franchise */}
+        {collection && (
+          <FranchiseTimeline
+            franchise={collection}
+            current={{ mediaType: "movie", id: movie.id }}
+          />
+        )}
+
         {/* Movie Videos Carousel */}
         <LazyVideosCarousel
           key={movie.id}
           src={`/api/title-videos?mediaType=movie&id=${movie.id}`}
           paused={trailerOpen}
         />
-
-        {/* Franchise */}
-        {collection && (
-          <FranchiseTimeline collection={collection} currentId={movie.id} />
-        )}
 
         {/* Images */}
         <LazyImageGallery
