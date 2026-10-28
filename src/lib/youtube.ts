@@ -1,4 +1,5 @@
 import { cached } from "@/lib/cache";
+import { config } from "@/lib/config";
 import type { TMDBVideo } from "@/lib/tmdb";
 
 export interface YouTubeSearchResult {
@@ -82,4 +83,91 @@ export async function getYouTubeVideos(
     if (e instanceof NoVideosError) return [];
     throw e;
   }
+}
+
+export interface YouTubeComment {
+  id: string;
+  author: string;
+  authorAvatar: string | null;
+  text: string;
+  likeCount: number;
+  publishedAt: string;
+}
+
+interface CommentThreadsResponse {
+  items?: {
+    snippet: {
+      topLevelComment: {
+        id: string;
+        snippet: {
+          authorDisplayName: string;
+          authorProfileImageUrl?: string;
+          textOriginal: string;
+          likeCount: number;
+          publishedAt: string;
+        };
+      };
+    };
+  }[];
+}
+
+/**
+ * YouTube's "top comments" to rank by likes; 100 is the API's page maximum and
+ * costs the same single quota unit as fewer.
+ */
+const COMMENT_POOL_SIZE = 100;
+export const TOP_COMMENTS_COUNT = 20;
+const COMMENT_TTL_SECONDS = 24 * 60 * 60;
+
+export function isYouTubeApiConfigured(): boolean {
+  return Boolean(config.youtube.apiKey);
+}
+
+/**
+ * A video's most-liked comments, most-liked first, via the YouTube Data API
+ * (1 quota unit). `order=relevance` is YouTube's "Top comments" ranking, which
+ * mixes in recency and replies, so the pool is re-ranked by likes. Empty when
+ * comments are off; quota and network errors throw, so they aren't cached.
+ */
+export async function getTopYouTubeComments(
+  videoId: string,
+): Promise<YouTubeComment[]> {
+  return cached(
+    `youtube:top_comments:${videoId}`,
+    async () => {
+      const url = new URL(`${config.youtube.baseUrl}/commentThreads`);
+      url.searchParams.set("part", "snippet");
+      url.searchParams.set("videoId", videoId);
+      url.searchParams.set("order", "relevance");
+      url.searchParams.set("maxResults", String(COMMENT_POOL_SIZE));
+      url.searchParams.set("textFormat", "plainText");
+      url.searchParams.set("key", config.youtube.apiKey);
+
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      // 403 commentsDisabled and 404 videoNotFound are answers, not failures.
+      if (res.status === 404) return [];
+      if (res.status === 403) {
+        const body = await res.json().catch(() => null);
+        const reason = body?.error?.errors?.[0]?.reason;
+        if (reason === "commentsDisabled") return [];
+      }
+      if (!res.ok) {
+        throw new Error(`YouTube API error: ${res.status} ${res.statusText}`);
+      }
+
+      const data = (await res.json()) as CommentThreadsResponse;
+      return (data.items ?? [])
+        .map(({ snippet: { topLevelComment: c } }) => ({
+          id: c.id,
+          author: c.snippet.authorDisplayName,
+          authorAvatar: c.snippet.authorProfileImageUrl ?? null,
+          text: c.snippet.textOriginal,
+          likeCount: c.snippet.likeCount,
+          publishedAt: c.snippet.publishedAt,
+        }))
+        .sort((a, b) => b.likeCount - a.likeCount)
+        .slice(0, TOP_COMMENTS_COUNT);
+    },
+    COMMENT_TTL_SECONDS,
+  );
 }

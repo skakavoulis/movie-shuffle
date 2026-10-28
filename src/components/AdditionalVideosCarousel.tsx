@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { TMDBVideo } from "@/lib/tmdb";
 import { useYouTubeVolume } from "@/lib/useYouTubeVolume";
+import TopVideoComments, {
+  useTopVideoComments,
+} from "@/components/TopVideoComments";
 
 interface AdditionalVideosCarouselProps {
   videos: TMDBVideo[];
@@ -89,74 +92,86 @@ export default function AdditionalVideosCarousel({
   }, [activeIdx]);
 
   const activeVideo = videos[activeIdx];
+  const comments = useTopVideoComments(activeVideo?.key ?? "");
   if (!activeVideo) return null;
 
   return (
     <section className="mt-12">
-      <div className="relative group">
-        <div className="relative w-full max-w-4xl mx-auto aspect-video rounded-xl overflow-hidden shadow-2xl bg-black ring-1 ring-white/10">
-          <iframe
-            ref={iframeRef}
-            key={activeVideo.id}
-            onLoad={initYouTubeListener}
-            src={`https://www.youtube.com/embed/${activeVideo.key}?${isDesktop ? "autoplay=1&mute=1&" : ""}rel=0&enablejsapi=1`}
-            title={activeVideo.name}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full"
-          />
+      <div
+        className={
+          comments.available
+            ? "max-w-6xl mx-auto lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-5"
+            : undefined
+        }
+      >
+        <div className="group min-w-0">
+          <div className="relative w-full max-w-4xl mx-auto aspect-video rounded-xl overflow-hidden shadow-2xl bg-black ring-1 ring-white/10">
+            <iframe
+              ref={iframeRef}
+              key={activeVideo.id}
+              onLoad={initYouTubeListener}
+              src={`https://www.youtube.com/embed/${activeVideo.key}?${isDesktop ? "autoplay=1&mute=1&" : ""}rel=0&enablejsapi=1`}
+              title={activeVideo.name}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+            {videos.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Previous video"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 19.5L8.25 12l7.5-7.5"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={goToNext}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Next video"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                    />
+                  </svg>
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <p className="text-sm font-medium text-text-primary truncate">
+              {activeVideo.name}
+            </p>
+            <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-text-muted text-xs">
+              {activeVideo.type}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-center gap-2 mt-3">
-          <p className="text-sm font-medium text-text-primary truncate">
-            {activeVideo.name}
-          </p>
-          <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-white/5 text-text-muted text-xs">
-            {activeVideo.type}
-          </span>
-        </div>
-
-        {videos.length > 1 && (
-          <>
-            <button
-              onClick={goToPrev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"
-              aria-label="Previous video"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 19.5L8.25 12l7.5-7.5"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={goToNext}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all"
-              aria-label="Next video"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                />
-              </svg>
-            </button>
-          </>
+        {comments.available && (
+          <TopVideoComments videoKey={activeVideo.key} state={comments.state} />
         )}
       </div>
 

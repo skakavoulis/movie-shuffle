@@ -20,6 +20,10 @@ export const config = {
     apiKey: process.env.MDBLIST_API_KEY ?? "",
     baseUrl: "https://api.mdblist.com",
   },
+  youtube: {
+    apiKey: process.env.YOUTUBE_API_KEY ?? "",
+    baseUrl: "https://www.googleapis.com/youtube/v3",
+  },
   motn: {
     apiKey: process.env.MOTN_API_KEY ?? "",
     baseUrl: "https://api.movieofthenight.com/v4",
