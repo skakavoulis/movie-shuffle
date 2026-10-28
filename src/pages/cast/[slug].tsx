@@ -70,6 +70,29 @@ function formatDate(dateStr: string) {
   });
 }
 
+type CastCredit = NonNullable<TMDBPersonDetails["combined_credits"]>["cast"][number];
+
+// News, Reality, Talk
+const NON_SCRIPTED_GENRES = new Set([10763, 10764, 10767]);
+const SELF_CHARACTER = /^(self|himself|herself|themselves)\b/i;
+
+// Drops talk shows, appearances as themselves, and one-off TV guest spots,
+// which TMDB's title popularity otherwise pushes to the top.
+function isKnownForCandidate(c: CastCredit) {
+  if (c.genre_ids?.some((g) => NON_SCRIPTED_GENRES.has(g))) return false;
+  if (SELF_CHARACTER.test(c.character ?? "")) return false;
+  if (c.media_type === "tv" && (c.episode_count ?? 0) < 3) return false;
+  return true;
+}
+
+// Ranks by how widely seen the title is (vote count, which is stable unlike
+// popularity), discounted when the person is far down the billing.
+function knownForScore(c: CastCredit) {
+  const order = c.order ?? 0;
+  const billing = order <= 3 ? 1 : order <= 10 ? 0.5 : 0.2;
+  return (c.vote_count ?? 0) * billing;
+}
+
 export default function CastPage({
   person,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
@@ -96,8 +119,14 @@ export default function CastPage({
         i,
     );
 
-  const knownFor = [...credits]
-    .sort((a, b) => b.popularity - a.popularity)
+  const knownFor = credits
+    .filter(isKnownForCandidate)
+    .filter(
+      (c, i, arr) =>
+        arr.findIndex((x) => x.id === c.id && x.media_type === c.media_type) ===
+        i,
+    )
+    .sort((a, b) => knownForScore(b) - knownForScore(a))
     .slice(0, 20);
 
   return (

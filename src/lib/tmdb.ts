@@ -708,6 +708,12 @@ export interface TMDBPersonDetails {
       release_date?: string;
       first_air_date?: string;
       popularity: number;
+      vote_count: number;
+      genre_ids: number[];
+      /** Billing position; movies only. */
+      order?: number;
+      /** TV only. */
+      episode_count?: number;
     }[];
   };
   external_ids?: {
