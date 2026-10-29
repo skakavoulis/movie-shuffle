@@ -22,6 +22,7 @@ cp .env.local.example .env.local
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only Supabase service role (secret) key, used for the per-title cache tables. They have RLS on and no anon access, so without it the caches are disabled. Never prefix it with `NEXT_PUBLIC_`. |
 | `TMDB_API_KEY` | Your TMDB v3 API key |
 | `NEXT_PUBLIC_SITE_URL` | Public origin (e.g. `https://example.com`) used for canonical URLs, Open Graph tags, `robots.txt` and `/sitemap.xml`. Falls back to Vercel's production domain, then `http://localhost:3000`. |
 | `MDBLIST_API_KEY` | Optional. Free [MDBList](https://mdblist.com/preferences) key (1,000 requests/day) that adds IMDb, Rotten Tomatoes, and Metacritic ratings to title pages. Without it those pills are simply hidden. |

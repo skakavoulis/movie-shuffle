@@ -69,13 +69,18 @@ function getClient(): SupabaseClient | null {
     return null;
   }
 
-  const { url, anonKey } = config.supabase;
-  if (!url || !anonKey) {
+  // The cache tables have RLS on and no anon/authenticated grants, so only the
+  // service role can use them. Never fall back to the public anon key.
+  const { url, serviceRoleKey } = config.supabase;
+  if (!url || !serviceRoleKey) {
+    console.warn(
+      "[titleCache] SUPABASE_SERVICE_ROLE_KEY is not set; title caches are disabled and every render fetches upstream",
+    );
     client = null;
     return null;
   }
 
-  client = createClient(url, anonKey, {
+  client = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return client;

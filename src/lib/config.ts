@@ -2,6 +2,11 @@ export const config = {
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    /**
+     * Server only (no NEXT_PUBLIC_ prefix, so it's never sent to the browser).
+     * Used for the server-side cache tables, which anon can't read or write.
+     */
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   },
   tmdb: {
     apiKey: process.env.TMDB_API_KEY ?? "",
