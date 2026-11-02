@@ -7,6 +7,7 @@ import {
 } from "@/lib/tmdb";
 import { getYouTubeVideos } from "@/lib/youtube";
 import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
+import { requireHuman } from "@/lib/humanCheck";
 
 type OkBody = { videos: TMDBVideo[] };
 
@@ -28,6 +29,7 @@ export default async function handler(
   if (mediaType !== "movie" && mediaType !== "tv") {
     return res.status(400).json({ error: "mediaType must be movie or tv" });
   }
+  if (!requireHuman(req, res)) return;
 
   try {
     // Same cached payload the detail page renders from, so this adds no

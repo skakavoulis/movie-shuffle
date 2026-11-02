@@ -12,7 +12,10 @@ type Props = {
    * skipped, so callers can write `cond && { ... }`.
    */
   facts: (QuickFact | false | "" | null | undefined)[];
-  /** Loaded in getServerSideProps so the facts are in the server HTML. */
+  /**
+   * Loaded in the browser after the human check (see useTitleExtras); null
+   * until then, so only the TMDB facts show at first.
+   */
   wikidata: TitleFacts | null;
 };
 

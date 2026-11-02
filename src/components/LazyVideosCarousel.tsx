@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { TMDBVideo } from "@/lib/tmdb";
 import AdditionalVideosCarousel from "@/components/AdditionalVideosCarousel";
+import { humanFetch } from "@/lib/humanFetch";
 
 interface LazyVideosCarouselProps {
   /** Videos already on the page, e.g. from a title's TMDB payload. */
@@ -116,7 +117,7 @@ export default function LazyVideosCarousel({
   useEffect(() => {
     if (!visible || !src) return;
     let cancelled = false;
-    fetch(src)
+    humanFetch(src)
       .then((r) => {
         if (!r.ok) throw new Error("Request failed");
         return r.json();

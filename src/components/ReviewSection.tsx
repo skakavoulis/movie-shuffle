@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import Modal, { CloseButton } from "@/components/Modal";
 import ReviewForm from "@/components/ReviewForm";
 import SignInPrompt from "@/components/SignInPrompt";
+import { humanFetch } from "@/lib/humanFetch";
 
 interface ReviewSectionProps {
   mediaType: "movie" | "tv";
@@ -295,7 +296,7 @@ export default function ReviewSection({
       media_type: mediaType,
       media_id: String(mediaId),
     });
-    fetch(`/api/reviews?${q}`)
+    humanFetch(`/api/reviews?${q}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: SiteReview[]) => {
         if (!cancelled) setSite({ key: loadKey, reviews: rows });
