@@ -15,12 +15,9 @@ import {
   tvShowToMediaItem,
   personHref,
   type TMDBTVShowDetails,
-  type Franchise,
 } from "@/lib/tmdb";
-import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
-import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
-import { getTVFranchise } from "@/lib/franchise";
-import { getTVDoubleFeature, type DoubleFeature } from "@/lib/doubleFeature";
+import { CDN_LONG } from "@/lib/cdnCache";
+import { useTitleExtras } from "@/lib/useTitleExtras";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import CarouselSection from "@/components/CarouselSection";
@@ -40,11 +37,6 @@ import DoubleFeatureSection from "@/components/DoubleFeatureSection";
 
 interface TVPageProps {
   show: TMDBTVShowDetails;
-  /** Null when Wikidata has no item for the title or didn't answer in time. */
-  facts: TitleFacts | null;
-  /** Related series and movies, when Wikidata links at least one. */
-  franchise: Franchise | null;
-  doubleFeature: DoubleFeature | null;
 }
 
 /**
@@ -64,13 +56,10 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
   }
 
   try {
-    // In parallel: the facts and franchise lookups only need the id. The
-    // double feature skips franchise parts, so it waits for both.
-    const [show, wikidata, related] = await Promise.all([
-      getTVShowDetails(showId),
-      getTitleFacts("tv", showId),
-      getTVFranchise(showId),
-    ]);
+    // TMDB only: the Wikidata facts, franchise and double feature load in the
+    // browser after the human check (see useTitleExtras), so scrapers never
+    // reach Wikidata or the per-title caches.
+    const show = await getTVShowDetails(showId);
 
     const canonicalSlug = tvSlug(show);
     if (slug !== canonicalSlug) {
@@ -82,28 +71,8 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
       };
     }
 
-    // Missing facts or franchise may be a slow first fetch that is still
-    // filling the cache; let the CDN re-render sooner to pick them up.
-    res.setHeader(
-      "Cache-Control",
-      wikidata && related ? CDN_LONG : CDN_MEDIUM,
-    );
-    const franchise = related?.franchise ?? null;
-    const doubleFeature = await getTVDoubleFeature(
-      show,
-      franchise?.parts
-        .filter((p) => p.mediaType === "tv")
-        .map((p) => p.id) ?? [],
-    ).catch(() => null);
-
-    return {
-      props: {
-        show,
-        facts: wikidata?.facts ?? null,
-        franchise,
-        doubleFeature,
-      },
-    };
+    res.setHeader("Cache-Control", CDN_LONG);
+    return { props: { show } };
   } catch {
     return { notFound: true };
   }
@@ -111,10 +80,8 @@ export const getServerSideProps: GetServerSideProps<TVPageProps> = async ({
 
 export default function TVShowPage({
   show,
-  facts,
-  franchise,
-  doubleFeature,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const { facts, franchise, doubleFeature } = useTitleExtras("tv", show.id);
   const bgUrl = backdropUrl(show.backdrop_path, "original");
   const year = show.first_air_date?.split("-")[0] ?? "";
   const tmdbRating = show.vote_average?.toFixed(1);

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRegion } from "@/context/RegionContext";
 import WatchProvidersButton from "@/components/WatchProvidersButton";
 import type { WatchOffer } from "@/lib/providerUrls";
+import { humanFetch } from "@/lib/humanFetch";
 
 type Props = {
   mediaType: "movie" | "tv";
@@ -30,7 +31,7 @@ export default function TitleWatchProviders({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/title-watch-providers?${query}`)
+    humanFetch(`/api/title-watch-providers?${query}`)
       .then((r) => (r.ok ? r.json() : { offer: null }))
       .then((data: { offer?: WatchOffer | null }) => {
         if (!cancelled) setResult({ query, offer: data.offer ?? null });

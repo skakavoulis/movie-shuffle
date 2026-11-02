@@ -5,6 +5,7 @@ import {
   type YouTubeComment,
 } from "@/lib/youtube";
 import { CDN_LONG } from "@/lib/cdnCache";
+import { requireHuman } from "@/lib/humanCheck";
 
 type OkBody = { comments: YouTubeComment[] };
 
@@ -24,6 +25,8 @@ export default async function handler(
   if (typeof videoId !== "string" || !VIDEO_ID.test(videoId)) {
     return res.status(400).json({ error: "Invalid videoId" });
   }
+
+  if (!requireHuman(req, res)) return;
 
   // Lets the player drop its comments column instead of showing it empty.
   if (!isYouTubeApiConfigured()) {

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type { User } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabaseServer";
 import { REVIEW_MAX_LENGTH, type SiteReview } from "@/lib/reviews";
+import { requireHuman } from "@/lib/humanCheck";
 
 const COLUMNS =
   "id, user_id, rating, content, author_name, author_avatar, created_at, updated_at";
@@ -46,6 +47,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  // Reading reviews is open to anyone, so it's what scrapers hit; writing
+  // them already requires signing in.
+  if (req.method === "GET" && !requireHuman(req, res)) return;
+
   const supabase = createServerSupabaseClient({ req, res });
   const {
     data: { user },

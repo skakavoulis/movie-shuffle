@@ -18,8 +18,8 @@ import {
   type TMDBMovieDetails,
   type Franchise,
 } from "@/lib/tmdb";
-import { CDN_LONG, CDN_MEDIUM } from "@/lib/cdnCache";
-import { getTitleFacts, type TitleFacts } from "@/lib/wikidata";
+import { CDN_LONG } from "@/lib/cdnCache";
+import { useTitleExtras } from "@/lib/useTitleExtras";
 import { getMovieDoubleFeature, type DoubleFeature } from "@/lib/doubleFeature";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -40,8 +40,6 @@ import KeywordChips from "@/components/KeywordChips";
 
 interface MoviePageProps {
   movie: TMDBMovieDetails;
-  /** Null when Wikidata has no item for the title or didn't answer in time. */
-  facts: TitleFacts | null;
   /** The movie's franchise, when it has at least one other part. */
   collection: Franchise | null;
   doubleFeature: DoubleFeature | null;
@@ -78,20 +76,16 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
   }
 
   try {
-    // In parallel: the facts lookup only needs the id, and the franchise
-    // only needs the details. The double feature skips franchise parts, so
-    // it waits for the franchise.
-    const [{ movie, collection, doubleFeature }, wikidata] = await Promise.all([
-      getMovieDetails(movieId).then(async (movie) => {
-        const collection = await getFranchise(movie);
-        const doubleFeature = await getMovieDoubleFeature(
-          movie,
-          collection?.parts.map((p) => p.id) ?? [],
-        ).catch(() => null);
-        return { movie, collection, doubleFeature };
-      }),
-      getTitleFacts("movie", movieId),
-    ]);
+    // TMDB only: the Wikidata facts load in the browser after the human
+    // check (see useTitleExtras), so scrapers never reach Wikidata or the
+    // per-title caches. The double feature skips franchise parts, so it
+    // waits for the franchise.
+    const movie = await getMovieDetails(movieId);
+    const collection = await getFranchise(movie);
+    const doubleFeature = await getMovieDoubleFeature(
+      movie,
+      collection?.parts.map((p) => p.id) ?? [],
+    ).catch(() => null);
 
     const canonicalSlug = movieSlug(movie);
     if (slug !== canonicalSlug) {
@@ -103,13 +97,10 @@ export const getServerSideProps: GetServerSideProps<MoviePageProps> = async ({
       };
     }
 
-    // Missing facts may be a slow first Wikidata fetch that is still filling
-    // the cache; let the CDN re-render sooner to pick them up.
-    res.setHeader("Cache-Control", wikidata ? CDN_LONG : CDN_MEDIUM);
+    res.setHeader("Cache-Control", CDN_LONG);
     return {
       props: {
         movie,
-        facts: wikidata?.facts ?? null,
         collection,
         doubleFeature,
       },
@@ -133,10 +124,10 @@ function formatCurrency(amount: number) {
 
 export default function MoviePage({
   movie,
-  facts,
   collection,
   doubleFeature,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const { facts } = useTitleExtras("movie", movie.id);
   const bgUrl = backdropUrl(movie.backdrop_path, "original");
   const year = movie.release_date?.split("-")[0] ?? "";
   const tmdbRating = movie.vote_average?.toFixed(1);

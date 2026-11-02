@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { YouTubeComment } from "@/lib/youtube";
+import { humanFetch } from "@/lib/humanFetch";
 
 export type CommentsState =
   | { status: "loading" }
@@ -27,7 +28,7 @@ export function useTopVideoComments(videoKey: string) {
   useEffect(() => {
     if (!videoKey || apiUnavailable || loadedComments.has(videoKey)) return;
     let cancelled = false;
-    fetch(`/api/video-comments?videoId=${encodeURIComponent(videoKey)}`)
+    humanFetch(`/api/video-comments?videoId=${encodeURIComponent(videoKey)}`)
       .then(async (r) => {
         if (r.status === 501) {
           apiUnavailable = true;
