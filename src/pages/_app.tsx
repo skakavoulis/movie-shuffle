@@ -1,4 +1,5 @@
 import type { AppProps } from "next/app";
+import { Analytics } from "@vercel/analytics/next";
 import "@/styles/globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { LikesProvider } from "@/context/LikesContext";
@@ -14,6 +15,9 @@ export default function App({ Component, pageProps }: AppProps) {
           <WatchlistProvider>
             <Component {...pageProps} />
             <Hotjar />
+            {/* Vercel Web Analytics: page views of browsers that run the page
+                script, so most scraper hits (plain HTML fetches) aren't counted. */}
+            <Analytics />
           </WatchlistProvider>
         </LikesProvider>
       </RegionProvider>
